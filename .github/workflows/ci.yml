@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: eduflow_ci
+          POSTGRES_USER: eduflow_ci
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U eduflow_ci -d eduflow_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://eduflow_ci@localhost:5432/eduflow_ci
+      TEST_DATABASE_URL: postgresql+psycopg://eduflow_ci@localhost:5432/eduflow_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.10"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: uv python install 3.13
+      - run: uv sync --locked --python 3.13
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest
+      - run: uv run alembic upgrade head
+      - run: uv run alembic check
