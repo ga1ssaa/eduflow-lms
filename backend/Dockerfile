@@ -7,6 +7,13 @@ RUN uv sync --locked --no-dev --no-install-project
 COPY app ./app
 RUN uv sync --locked --no-dev
 
+FROM builder AS test
+RUN uv sync --locked
+COPY tests ./tests
+COPY alembic.ini ./
+COPY alembic ./alembic
+CMD ["uv", "run", "--locked", "python", "-m", "pytest", "-p", "no:cacheprovider"]
+
 FROM python:3.13-slim AS runtime
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PATH="/app/.venv/bin:$PATH"
 RUN groupadd --system app && useradd --system --gid app --home-dir /app app

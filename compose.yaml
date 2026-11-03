@@ -5,6 +5,15 @@ services:
     environment:
       DATABASE_URL: ${DATABASE_URL:?Copy .env.example to .env first}
       CORS_ORIGINS: ${CORS_ORIGINS:-[]}
+      JWT_SECRET: ${JWT_SECRET:?Generate JWT_SECRET in .env as described in README}
+      JWT_ISSUER: ${JWT_ISSUER:-eduflow}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-15}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-7}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:-["http://localhost:5173","http://127.0.0.1:5173","http://localhost:8000"]}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-false}
+      REFRESH_COOKIE_SAMESITE: ${REFRESH_COOKIE_SAMESITE:-lax}
+      REFRESH_COOKIE_NAME: ${REFRESH_COOKIE_NAME:-eduflow_refresh}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:
