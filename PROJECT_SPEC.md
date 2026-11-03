@@ -4,7 +4,7 @@
 
 EduFlow is a portfolio learning management system for publishing structured courses, enrolling learners, and tracking completion. It should demonstrate a professional, maintainable product with a small operational footprint and a fast local development loop.
 
-**Phases 1–2 cover foundation and identity.** Foundation provides application startup, health endpoints, configuration, database connectivity, migrations, containers, automated checks, and documentation. Identity adds registration, login, JWT access tokens, refresh rotation, logout, current-user access, role dependencies, and explicit administrator bootstrap. Courses, learning workflows, dashboards, and the frontend remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
+**Phases 1–3 cover foundation, identity, and course management.** Foundation provides application startup, health endpoints, configuration, database connectivity, migrations, containers, automated checks, and documentation. Identity adds authentication, refresh rotation, role dependencies, and explicit administrator bootstrap. Course management adds instructor-owned drafts, ordered curriculum, publishing, admin moderation, and a published-only public catalog. Enrollment, learning workflows, dashboards, and the frontend remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
 
 ## Technology
 
@@ -70,13 +70,25 @@ Keep configuration and shared infrastructure separate from feature modules. Add 
 | --- | --- | --- |
 | User | UUID, unique indexed normalized email, password hash, full name, constrained role, active state, UTC creation/update timestamps | Phase 2 |
 | Refresh session | UUID, user foreign key, unique token hash, UTC expiry/revocation/creation timestamps | Phase 2 |
-| Course | Instructor-owned learning product, publication state, title, description | Future |
-| Module | Ordered section belonging to one course | Future |
-| Lesson | Ordered learning content belonging to one module | Future |
+| Course | Instructor-owned product, unique slug, title, description, category, constrained level/publication state, UTC timestamps | Phase 3 |
+| Module | Ordered titled section belonging to one course; positive unique position per course | Phase 3 |
+| Lesson | Ordered content/video belonging to one module; positive unique position per module | Phase 3 |
 | Enrollment | Student membership in a course; unique per student and course | Future |
 | Lesson completion | Completion record; unique per enrollment and lesson | Future |
 
 Confirm field types and deletion policies when each feature is designed. Enforce relationship integrity and uniqueness in PostgreSQL. Derive progress from eligible lessons and completion records; define behavior for newly added or unpublished lessons before exposing percentages. Avoid storing a second mutable progress total without a demonstrated need.
+
+## Phase 3 course requirements
+
+- Creation derives instructor identity from the authenticated user and starts in draft state. Public input cannot set ownership, publication state, or child positions. Require a canonical lowercase slug and enforce global uniqueness in PostgreSQL, reporting concurrent collisions safely.
+- Instructors manage owned courses and curriculum. Admin management access is explicit in the role dependencies and service policy. Owned listings remain scoped to the current user; admin listings include all courses. Student and inactive-user authoring requests are denied.
+- Provide course CRUD and publish/unpublish endpoints under `/api/v1/instructor/courses`, child management under `/api/v1/instructor/modules` and `/api/v1/instructor/lessons`, and exact-parent `/modules/order` and `/lessons/order` endpoints. Reuse auth dependencies and request-scoped synchronous sessions.
+- Reordering accepts exactly the complete current set of child IDs once. Reject foreign, duplicate, missing, and stale sets without partial writes. Serialize curriculum mutations on the course row and use deferrable parent-position unique constraints. Assign contiguous positions on append/delete/reorder.
+- Publishing requires a valid title, nonempty description and category, at least one module and one total lesson, and a title plus content or valid HTTP(S) video URL for every lesson. Repeated publishing is safe and preserves the current publication date. Unpublishing clears that date. Validate published edits in the same transaction and roll back changes that invalidate publication.
+- Only drafts can be deleted. Explicit course deletion removes its owned modules and lessons; explicit module deletion removes its lessons. User foreign keys restrict deletion of referenced instructors. No soft-delete mechanism is introduced.
+- Public `/api/v1/courses` supports bounded pagination, literal case-insensitive title search, category and level filters, deterministic ordering, instructor names, and curriculum counts without N+1 queries. Public `/{slug}` exposes only a published course and ordered titles; never lesson content or video URLs. Drafts are not discoverable publicly.
+- Admin-only `/api/v1/admin/courses` supports listing, full details, publishing, and unpublishing under the same validation rules. No separate moderation workflow is introduced.
+- Enrollment, student access to full lesson content, progress, dashboards, and frontend screens are excluded from this phase.
 
 ## API principles
 
@@ -84,7 +96,7 @@ Confirm field types and deletion policies when each feature is designed. Enforce
 - Use Pydantic request and response models with explicit public fields. Never return password hashes, token material, or internal exception details.
 - Use standard HTTP methods and status codes. Validate input and return actionable, consistent errors.
 - Add bounded pagination and deterministic ordering to future list endpoints.
-- Use JWT access tokens, revocable refresh sessions, and current-state role checks. Add resource ownership checks alongside course authoring in Phase 3.
+- Use JWT access tokens, revocable refresh sessions, and current-state role checks. Enforce resource ownership checks for course authoring.
 - Design API behavior for the frontend without coupling backend modules to a browser implementation.
 
 ## Delivery phases
@@ -114,3 +126,5 @@ For Phase 1:
 For later features, also require authorization tests, success and failure cases, reviewed migrations where applicable, responsive accessible UI where applicable, and explicit documentation of remaining limitations. Do not claim a future feature is complete from scaffolding alone.
 
 For Phase 2, require registration/login validation, JWT rejection cases, real PostgreSQL refresh rotation and concurrency tests, logout cookie clearing, all role combinations and inactive-user checks, CLI bootstrap checks, and unchanged health endpoints. Validate migrations on an isolated database without resetting development data. Run pytest, Ruff lint/format, and an independent security review. Document any unavailable verification rather than treating a skipped integration suite as completion.
+
+For Phase 3, also require real PostgreSQL course/curriculum CRUD, ownership and admin checks, publication invariants, atomic reorder and rollback tests, foreign-key/unique/check-constraint tests, catalog visibility/filtering/pagination/counts, and public content-leakage checks. Preserve all earlier-phase tests. Apply the additive migration without resetting development data and confirm Alembic metadata matches the database.

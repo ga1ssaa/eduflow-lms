@@ -5,6 +5,7 @@ from sqlalchemy import create_engine, pool
 from alembic import context
 from app.auth import models  # noqa: F401 -- register model metadata for Alembic
 from app.core.config import get_settings
+from app.courses import models as course_models  # noqa: F401 -- register course metadata
 from app.db.base import Base
 
 config = context.config

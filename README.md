@@ -1,6 +1,6 @@
 # EduFlow LMS
 
-A backend-first learning management system built as a modular monolith. Phase 1 provides the API and database foundation. Phase 2 adds registration, login, JWT access tokens, rotating refresh sessions, logout, current-user access, role dependencies, and an administrator CLI. Courses and the frontend come in later phases.
+A backend-first learning management system built as a modular monolith. Phase 1 provides the API and database foundation. Phase 2 adds authentication and role-based authorization. Phase 3 adds course authoring, ordered modules and lessons, publishing, administration, and a public course catalog. Enrollment, learning progress, and the frontend come in later phases.
 
 ## Run with Docker
 
@@ -46,7 +46,7 @@ docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -
 docker compose stop
 ```
 
-The named `postgres_data` volume persists between restarts. Do not remove it or use volume deletion commands without explicit approval. Migrations run explicitly; application startup never creates tables. Migration `0001` establishes the baseline; `0002` adds users and refresh sessions. Its downgrade deletes those tables and must never be used on valuable data without approval.
+The named `postgres_data` volume persists between restarts. Do not remove it or use volume deletion commands without explicit approval. Migrations run explicitly; application startup never creates tables. Migration `0001` establishes the baseline; `0002` adds users and refresh sessions; `0003` adds courses, modules, and lessons. Downgrading these feature migrations deletes their tables and must never be used on valuable data without approval.
 
 ## Authentication
 
@@ -80,6 +80,38 @@ docker compose exec backend python -m app.cli create-admin --email your-address@
 
 The CLI prompts for the password and confirmation without echoing it and requires a terminal. It refuses existing accounts and never silently promotes a student. There is no default administrator and no startup bootstrap. Do not pass passwords through command arguments or shell history.
 
+## Course management
+
+Management endpoints require a Bearer access token and load the user's current role and active state through the existing authentication dependencies. Instructors can access only their own courses. Admin access is explicitly allowed for management of any course; `/instructor/courses` still lists only the current user's courses, while `/admin/courses` lists all courses. There is no public role-promotion endpoint.
+
+All paths below start with `/api/v1`:
+
+| Method and path | Purpose |
+| --- | --- |
+| `POST /instructor/courses` | Create a draft owned by the authenticated instructor or admin. |
+| `GET /instructor/courses` | Paginated owned courses. |
+| `GET`, `PATCH`, `DELETE /instructor/courses/{course_id}` | View full authoring content, edit, or delete a draft. |
+| `POST /instructor/courses/{course_id}/publish`, `/unpublish` | Change publication state. |
+| `POST /instructor/courses/{course_id}/modules` | Append a module. |
+| `PATCH`, `DELETE /instructor/modules/{module_id}` | Edit or delete a module. |
+| `PUT /instructor/courses/{course_id}/modules/order` | Atomically reorder all modules. |
+| `POST /instructor/modules/{module_id}/lessons` | Append a lesson. |
+| `PATCH`, `DELETE /instructor/lessons/{lesson_id}` | Edit or delete a lesson. |
+| `PUT /instructor/modules/{module_id}/lessons/order` | Atomically reorder all lessons. |
+| `GET /courses`, `/courses/{slug}` | Public published catalog and curriculum outline. |
+| `GET /admin/courses`, `/admin/courses/{course_id}` | Admin-only listing and full details, including drafts. |
+| `POST /admin/courses/{course_id}/publish`, `/unpublish` | Admin-only publication moderation with the same validation. |
+
+Course creation requires `title` and `slug`; optional fields are `description`, `category`, and `level` (`beginner`, `intermediate`, `advanced`; default `beginner`). Slugs contain lowercase ASCII letters or digits separated by single hyphens, up to 200 characters. Slug conflicts return 409, including concurrent creation attempts. Title changes do not regenerate slugs. Public input cannot set `instructor_id` or publication state.
+
+Module creation takes `title`. Lesson creation takes `title`, optional `content`, and optional HTTP(S) `video_url`. PATCH changes only supplied fields; `video_url: null` clears the video. Positions are positive, server-assigned, and unique within a parent. Reorder bodies are `{"ids": ["<UUID>", "<UUID>"]}` and must contain exactly all current child IDs once. Parent-course row locks serialize structural edits; deferrable unique constraints let valid swaps commit atomically. No ordering library is used.
+
+Publishing requires a title, nonempty description and category, at least one module and one lesson, and a title plus content or valid video URL for every lesson. Repeated publish requests preserve the current publication date. Unpublish clears it; republishing sets a new date. Edits and deletions that would make a published course invalid are rejected and rolled back. Unpublish before deleting a published course. Explicit draft-course deletion cascades through its curriculum; explicit module deletion removes its lessons in the same transaction. No unrelated records are deleted.
+
+Public listings accept `page` (default 1), `page_size` (default 20, maximum 100), case-insensitive literal title `search`, exact `category`, and `level`. Responses contain `items`, `total`, `page`, and `page_size`, ordered by creation time descending and UUID ascending. Each item includes instructor name and module/lesson counts. Public details include ordered module and lesson titles; they never include lesson content or video URLs. Drafts return 404 publicly. Authoring details are protected; student lesson-content access belongs to Phase 4.
+
+Course mutations use Bearer authentication rather than ambient refresh cookies, so the auth endpoints' CSRF marker is not required for these routes. CORS allows the PATCH, PUT, and DELETE methods needed by a future browser client. Validation errors use 422, denied roles or ownership use 403, absent resources use 404, and business-state conflicts use 409.
+
 ## Local Python development
 
 Requirements: Python 3.12+ and [uv](https://docs.astral.sh/uv/). The container and CI use Python 3.13.
@@ -99,7 +131,7 @@ uv run alembic upgrade head
 uv run python -m uvicorn app.main:create_app --factory --reload
 ```
 
-Set a generated `JWT_SECRET` in the local Python environment or `backend/.env` too. Tests use doubles for selected failure cases; production health checks always query PostgreSQL. Auth integration tests skip unless `TEST_DATABASE_URL` identifies a reachable isolated PostgreSQL database whose name begins `eduflow_test_`. Provision a new test database, migrate it with Alembic, and keep credentials in an ignored environment file. Never use the development database for tests. Tests use unique records and do not reset or delete database contents.
+Set a generated `JWT_SECRET` in the local Python environment or `backend/.env` too. Tests use doubles for selected failure cases; production health checks always query PostgreSQL. Auth and course integration tests skip unless `TEST_DATABASE_URL` identifies a reachable isolated PostgreSQL database whose name begins `eduflow_test_`. Provision a new test database, migrate it with Alembic, and keep credentials in an ignored environment file. Never use the development database for tests. Tests use unique records and do not reset or delete database contents.
 
 ```sh
 uv run python -m pytest -m integration
@@ -132,5 +164,7 @@ The test image uses locked dependencies and includes Alembic migrations. The tes
 - `.github/workflows/ci.yml`: dependency installation, Ruff, tests, and PostgreSQL migration checks.
 
 `backend/app/auth/` contains auth models, schemas, security helpers, dependencies, routes, services, and persistence queries. Authentication follows Router → Service → Repository → Database without generic base repositories. Infrastructure health checks query the database directly.
+
+`backend/app/courses/` contains course models, schemas, persistence queries, and business services. Public, instructor, and admin routers reuse these services and the existing database sessions; publication and ownership rules are shared.
 
 See [PROJECT_SPEC.md](PROJECT_SPEC.md) for scope and phases, [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for the future frontend, and [AGENTS.md](AGENTS.md) for project contribution rules. Use Git for version control; no automatic snapshots or duplicate source backups. Never commit `.env` files, push, deploy, or run destructive database commands without authorization.
