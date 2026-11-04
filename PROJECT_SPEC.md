@@ -4,7 +4,7 @@
 
 EduFlow is a portfolio learning management system for publishing structured courses, enrolling learners, and tracking completion. It should demonstrate a professional, maintainable product with a small operational footprint and a fast local development loop.
 
-**Phases 1–4 cover the core backend.** Foundation provides the API, configuration, database, migrations, containers, and checks. Identity adds authentication, refresh rotation, roles, and administrator bootstrap. Course management adds authoring, publishing, moderation, and a public catalog. Learning adds enrollment, protected student content, completion, derived progress, dashboard data, and instructor statistics. The frontend and later product polish remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
+**Phases 1–4 cover the core backend.** Foundation, identity, courses, and learning provide the API. Phase 5A provides the React frontend foundation, public catalog, authentication, student learning, instructor reviews/statistics, and administrator publication moderation. Frontend authoring and later product polish remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
 
 ## Technology
 
@@ -16,9 +16,9 @@ EduFlow is a portfolio learning management system for publishing structured cour
 | Schema changes | Alembic |
 | Quality | pytest, Ruff |
 | Local runtime and CI | Docker Compose, GitHub Actions |
-| Future frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Router, Lucide |
+| Frontend | React, TypeScript, Vite, Tailwind CSS, TanStack Query, React Router, Lucide |
 
-Use free local tools and existing dependencies where practical. The frontend stack is a plan, not a Phase 1 dependency.
+Use free local tools and existing dependencies where practical. Frontend dependencies live separately under `frontend/`.
 
 ## Roles and planned workflows
 
@@ -119,7 +119,8 @@ Confirm field types and deletion policies when each feature is designed. Enforce
 | 2 — Identity | Registration, login, token refresh/logout, roles | Authentication and authorization tested before learning features |
 | 3 — Course authoring | Instructor-owned courses, ordered modules and lessons, publishing | Server-side ownership and publication rules |
 | 4 — Learning | Enrollment, access rules, lesson completion, progress | Integrity and repeat-request behavior tested |
-| 5 — Product UI | Responsive student, instructor, and admin experiences | React frontend using the design system and real API data |
+| 5A — Product UI foundation | Catalog, auth, student learning, instructor reviews and admin publication | Real API data; responsive light/dark themes; authoring forms deferred |
+| 5B — Authoring UI | Instructor course/module/lesson forms and ordering | Existing CRUD APIs; ownership, 409 conflicts and publication validation |
 | 6 — Polish | Dashboards, accessibility, documentation, operational hardening | Prioritize evidence from real workflows; no invented metrics |
 
 Future phase scope is provisional and should be refined before implementation.

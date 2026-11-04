@@ -2,7 +2,7 @@
 
 ## Status and direction
 
-This is the visual contract for the future frontend. Phase 1 delivers backend infrastructure; no screens or interactive components are implied to exist yet.
+This is the visual contract for the EduFlow frontend. Phase 5A implements the catalog, authentication, student learning, instructor review, and admin moderation screens.
 
 Build a clear, professional SaaS interface for learning and course management. Prioritize readable content, predictable navigation, compact controls, and visible progress. Use restrained decoration; avoid excessive gradients, glow, oversized cards, and charts populated with invented data.
 
@@ -17,7 +17,9 @@ Build a clear, professional SaaS interface for learning and course management. P
 | Text | `#172033` | `#F8FAFC` |
 | Muted text | `#64748B` | `#94A3B8` |
 
-Use primary for the main action, active navigation, and selected states. Reserve accent for small highlights or secondary emphasis; it is not an automatic error or warning color. Define semantic success, warning, error, border, focus, hover, and disabled tokens when implementing components, checking them in both themes. Never rely on color alone to communicate state.
+Use primary for main actions, active navigation, links, and focus indicators. Use accent consistently for course-card highlights, level badges, learning progress, selected lesson emphasis, and selected secondary learning actions. The catalog heading and empty-state illustration must retain visible accent color when no courses exist. Accent is not an error, warning, or completion-status color; success and error retain their semantic treatments. Never rely on color alone to communicate state.
+
+Define colors once in theme variables and expose semantic Tailwind tokens through `@theme inline` in `frontend/src/styles.css`. Components use the shared accent, foreground, subtle-surface, and progress-track tokens rather than per-screen color literals. Raw accent fills require dark foregrounds in both themes. Selected lessons retain a contrasting boundary and font-weight change; progress retains explicit counts/percentage and a contrasting track. Do not add gradients, glow, or extra decorative components to introduce accent color.
 
 ### Verified foreground choices
 

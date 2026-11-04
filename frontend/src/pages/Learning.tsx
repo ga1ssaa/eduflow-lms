@@ -1,0 +1,351 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  CheckCircle2,
+  ExternalLink,
+  LockKeyhole,
+} from 'lucide-react';
+import { api } from '../lib/api';
+import { useAuth } from '../auth/AuthProvider';
+import type { StudentLessonRead } from '../lib/types';
+import {
+  Badge,
+  Empty,
+  ErrorPanel,
+  Loading,
+  PageHeading,
+  Pagination,
+  Progress,
+  safeVideo,
+  usePage,
+} from '../components/ui';
+export function LearningPage() {
+  const { user } = useAuth();
+  const { page, setPage } = usePage();
+  const dashboard = useQuery({
+    queryKey: ['student', user!.id, 'dashboard'],
+    queryFn: ({ signal }) => api.dashboard(signal),
+  });
+  const courses = useQuery({
+    queryKey: ['student', user!.id, 'courses', page],
+    queryFn: ({ signal }) =>
+      api.studentCourses({ page, page_size: 12 }, signal),
+  });
+  return (
+    <>
+      <PageHeading
+        eyebrow="MY LEARNING"
+        title={`Keep moving forward, ${user!.full_name.split(' ')[0]}.`}
+      >
+        <p>Every lesson is a step toward something new.</p>
+      </PageHeading>
+      {dashboard.isPending ? (
+        <Loading label="Loading your overview…" />
+      ) : dashboard.isError ? (
+        <ErrorPanel
+          error={dashboard.error}
+          retry={() => void dashboard.refetch()}
+        />
+      ) : (
+        <div className="stats-grid">
+          <div className="stat surface">
+            <span>Enrolled courses</span>
+            <strong>{dashboard.data.total_enrolled_courses}</strong>
+          </div>
+          <div className="stat surface">
+            <span>In progress</span>
+            <strong>{dashboard.data.in_progress_courses}</strong>
+          </div>
+          <div className="stat surface">
+            <span>Completed</span>
+            <strong>{dashboard.data.completed_courses}</strong>
+          </div>
+        </div>
+      )}
+      <div className="section-heading">
+        <h2>Your courses</h2>
+        <Link className="text-link" to="/courses">
+          Explore catalog <ArrowRight size={16} aria-hidden="true" />
+        </Link>
+      </div>
+      {courses.isPending ? (
+        <Loading label="Loading your courses…" />
+      ) : courses.isError ? (
+        <ErrorPanel
+          error={courses.error}
+          retry={() => void courses.refetch()}
+        />
+      ) : (
+        <>
+          {courses.data.items.length === 0 ? (
+            <Empty
+              title={
+                page === 1
+                  ? 'Your learning journey starts here'
+                  : 'No courses on this page'
+              }
+            >
+              <p>
+                {page === 1
+                  ? 'Explore the catalog and enroll in a course that interests you.'
+                  : 'Go back to see your enrolled courses.'}
+              </p>
+              <Link className="button primary" to="/courses">
+                Browse courses
+              </Link>
+            </Empty>
+          ) : (
+            <div className="course-grid">
+              {courses.data.items.map((c) => (
+                <article className="course-card surface" key={c.enrollment_id}>
+                  <div className="course-card-top">
+                    <span className="course-icon">
+                      <BookOpen aria-hidden="true" />
+                    </span>
+                    <Badge success={c.is_completed}>
+                      {c.is_available
+                        ? c.is_completed
+                          ? 'Completed'
+                          : 'In progress'
+                        : 'Unavailable'}
+                    </Badge>
+                  </div>
+                  <p className="category-label">{c.category || 'Course'}</p>
+                  <h3>{c.title}</h3>
+                  <p className="instructor">By {c.instructor_name}</p>
+                  <Progress
+                    completed={c.completed_lessons}
+                    total={c.total_lessons}
+                    percent={c.progress_percentage}
+                    done={c.is_completed}
+                  />
+                  <div className="learning-card-bottom">
+                    {c.is_available ? (
+                      <Link
+                        className="button secondary full-width"
+                        to={`/learn/${c.course_id}`}
+                      >
+                        {c.is_completed ? 'Review course' : 'Continue learning'}
+                        <ArrowRight size={16} aria-hidden="true" />
+                      </Link>
+                    ) : (
+                      <p className="small unavailable">
+                        <LockKeyhole size={16} aria-hidden="true" />
+                        This course is currently unavailable. Your progress is
+                        saved.
+                      </p>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+          <Pagination
+            page={page}
+            total={courses.data.total}
+            size={courses.data.page_size}
+            onChange={setPage}
+          />
+        </>
+      )}
+    </>
+  );
+}
+export function LessonPage() {
+  const { courseId = '' } = useParams();
+  const { user } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const client = useQueryClient();
+  const course = useQuery({
+    queryKey: ['student', user!.id, 'course', courseId],
+    queryFn: ({ signal }) => api.studentCourse(courseId, signal),
+  });
+  const lessons = course.data?.modules.flatMap((m) => m.lessons) ?? [];
+  const requested = params.get('lesson');
+  const selected = lessons.find((l) => l.id === requested) ?? lessons[0];
+  const lessonKey = ['student', user!.id, 'lesson', selected?.id];
+  const lesson = useQuery({
+    queryKey: lessonKey,
+    queryFn: ({ signal }) => api.lesson(selected!.id, signal),
+    enabled: !!selected,
+  });
+  const completion = useMutation({
+    mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
+      completed ? api.incompleteLesson(id) : api.completeLesson(id),
+    onSuccess: async (data, variables) => {
+      client.setQueryData<StudentLessonRead>(
+        ['student', user!.id, 'lesson', variables.id],
+        (previous) =>
+          previous
+            ? {
+                ...previous,
+                is_completed: data.is_completed,
+                completed_at: data.completed_at,
+              }
+            : previous,
+      );
+      await Promise.all([
+        client.invalidateQueries({ queryKey: ['student', user!.id] }),
+        client.invalidateQueries({ queryKey: ['author'] }),
+        client.invalidateQueries({ queryKey: ['admin'] }),
+      ]);
+    },
+  });
+  const selectLesson = (id: string) => {
+    completion.reset();
+    setParams({ lesson: id });
+  };
+  if (course.isPending) return <Loading label="Loading your course…" />;
+  if (course.isError)
+    return (
+      <ErrorPanel error={course.error} retry={() => void course.refetch()} />
+    );
+  const c = course.data;
+  const index = lessons.findIndex((l) => l.id === selected?.id);
+  const video = safeVideo(lesson.data?.video_url);
+  return (
+    <>
+      <Link to="/learning" className="back-link">
+        ← My learning
+      </Link>
+      <div className="lesson-heading">
+        <div>
+          <p className="eyebrow">YOUR CLASSROOM</p>
+          <h1>{c.title}</h1>
+        </div>
+        <Badge success={c.is_completed}>
+          {c.is_completed ? 'Course completed' : 'In progress'}
+        </Badge>
+      </div>
+      <div className="player-layout">
+        <aside className="lesson-sidebar surface">
+          <h2>Course content</h2>
+          <Progress
+            completed={c.completed_lessons}
+            total={c.total_lessons}
+            percent={c.progress_percentage}
+            done={c.is_completed}
+          />
+          <nav aria-label="Course lessons">
+            {c.modules.map((m) => (
+              <div key={m.id} className="sidebar-module">
+                <h3>
+                  {m.position}. {m.title}
+                </h3>
+                <ol>
+                  {m.lessons.map((l) => (
+                    <li key={l.id}>
+                      <button
+                        className={`lesson-nav ${l.id === selected?.id ? 'selected' : ''}`}
+                        aria-current={
+                          l.id === selected?.id ? 'page' : undefined
+                        }
+                        onClick={() => selectLesson(l.id)}
+                      >
+                        <BookOpen size={16} aria-hidden="true" />
+                        <span>{l.title}</span>
+                        {l.id === selected?.id && lesson.data?.is_completed && (
+                          <Check size={16} aria-label="Completed" />
+                        )}
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </nav>
+        </aside>
+        <section className="lesson-content surface" aria-label="Lesson content">
+          {!selected ? (
+            <Empty title="No lessons available">
+              <p>Check back when course content is available.</p>
+            </Empty>
+          ) : lesson.isPending ? (
+            <Loading label="Loading lesson…" />
+          ) : lesson.isError ? (
+            <ErrorPanel
+              error={lesson.error}
+              retry={() => void lesson.refetch()}
+            />
+          ) : (
+            <>
+              <div className="section-heading">
+                <span className="small muted">
+                  Lesson {index + 1} of {lessons.length} ·{' '}
+                  {lesson.data.module_title}
+                </span>
+                {lesson.data.is_completed && <Badge success>Completed</Badge>}
+              </div>
+              <h2>{lesson.data.title}</h2>
+              {video && (
+                <a
+                  className="video-link"
+                  href={video}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open lesson video{' '}
+                  <ExternalLink size={18} aria-hidden="true" />
+                  <span className="sr-only">(opens in a new tab)</span>
+                </a>
+              )}
+              <div className="lesson-text">
+                {lesson.data.content ||
+                  (video
+                    ? 'Watch the video to complete this lesson.'
+                    : 'This lesson has no text content.')}
+              </div>
+              {completion.isError && <ErrorPanel error={completion.error} />}
+              <div className="completion-row">
+                <button
+                  className={`button ${lesson.data.is_completed ? 'secondary' : 'primary'}`}
+                  disabled={completion.isPending}
+                  onClick={() =>
+                    completion.mutate({
+                      id: lesson.data.id,
+                      completed: lesson.data.is_completed,
+                    })
+                  }
+                >
+                  <CheckCircle2 size={18} aria-hidden="true" />
+                  {completion.isPending
+                    ? 'Saving progress…'
+                    : lesson.data.is_completed
+                      ? 'Mark as incomplete'
+                      : 'Mark as complete'}
+                </button>
+                <span role="status" className="small muted">
+                  {completion.isSuccess
+                    ? 'Progress saved'
+                    : 'Your progress saves to your account.'}
+                </span>
+              </div>
+              <nav className="lesson-pagination" aria-label="Lesson navigation">
+                <button
+                  className="button secondary"
+                  disabled={index <= 0}
+                  onClick={() => selectLesson(lessons[index - 1].id)}
+                >
+                  <ArrowLeft size={16} aria-hidden="true" />
+                  Previous lesson
+                </button>
+                <button
+                  className="button secondary"
+                  disabled={index >= lessons.length - 1}
+                  onClick={() => selectLesson(lessons[index + 1].id)}
+                >
+                  Next lesson
+                  <ArrowRight size={16} aria-hidden="true" />
+                </button>
+              </nav>
+            </>
+          )}
+        </section>
+      </div>
+    </>
+  );
+}

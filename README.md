@@ -1,6 +1,35 @@
 # EduFlow LMS
 
-A backend-first learning management system built as a modular monolith. Phases 1–3 provide the API foundation, authentication, course authoring, publication, and public catalog. Phase 4 adds student enrollment, protected learning content, lesson completion, progress, student dashboard data, and instructor statistics. The frontend comes next.
+A backend-first learning management system built as a modular monolith. Phases 1–4 provide authentication, course management, enrollment and learning progress. Phase 5A adds the React application: public catalog, authentication, student learning, instructor course reviews/statistics, and admin publication moderation. Course authoring forms remain for Phase 5B.
+
+## Run the frontend
+
+Requirements: Node.js 24 LTS, npm, and the running EduFlow API below. In another terminal:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Open <http://127.0.0.1:5173>. Vite proxies `/api` to `http://127.0.0.1:8000`, preserving the browser Origin for backend CSRF validation. Stay on the same hostname for cookies. No frontend environment file is required; optional overrides are in `frontend/.env.example`. If the API port changes, set `EDUFLOW_API_PROXY_TARGET` to its local URL. `VITE_*` settings are public browser configuration and must never contain secrets.
+
+The frontend uses the real API and shows empty states when no courses exist. Registration creates students only. Instructor/admin accounts must already have the appropriate backend role; there is no user-management endpoint or default account. Instructor views are read-only in this phase; admins can publish and unpublish valid courses.
+
+Access tokens stay in memory. Refresh cookies remain HttpOnly; auth POSTs include credentials and the CSRF marker. Session recovery serializes cookie operations, shares refreshes within a tab, and uses Web Locks where supported across tabs. Older browsers without Web Locks may reject a racing refresh safely and require sign-in again. Logout cancels private requests and clears cached data; failed server revocation offers a sign-out retry. Light/dark/system selection is the only persisted browser preference.
+
+```sh
+cd frontend
+npm run check
+npm run lint
+npm run format:check
+npm test
+npm run build
+```
+
+`npm run preview` serves the built app on port 4173. Authentication on that port requires adding its exact origin to the backend allowlist; the normal development workflow uses port 5173. A future production host must serve SPA routes with an `index.html` fallback, proxy `/api/v1` to the API, and use HTTPS with Secure refresh cookies and explicit trusted origins. Nothing is deployed by these commands.
+
+Optional real-API browser tests use `npm run test:e2e` after `npx playwright install chromium`. They require Vite on port 5173 pointed at a separate API using an isolated `eduflow_test_*` PostgreSQL database. Set `EDUFLOW_E2E_FIXTURE_FILE` to a private JSON file containing `student`, `instructor`, and `admin` accounts (`email`, `password`) plus `course` and `draft` (`id`, `slug`, `title`). The student full name must be `Frontend Student`. The published course needs two ordered text lessons containing `Private lesson 1.` and `Private lesson 2.` respectively; the draft must satisfy publication rules. Keep this file outside Git with mode 0600; never use development or production accounts. Tests enroll the fixture student and change completion/publication state; they do not reset databases. Without fixtures they explicitly skip. Browser traces/video are disabled to avoid capturing token responses.
 
 ## Run with Docker
 
@@ -185,7 +214,9 @@ The test image uses locked dependencies and includes Alembic migrations. The tes
 - `backend/app/core/`: environment settings.
 - `backend/app/db/`: declarative base and synchronous per-request sessions.
 - `backend/alembic/`: schema migrations.
-- `backend/tests/`: automated checks.
+- `backend/tests/`: automated backend checks.
+- `frontend/src/`: typed API/session client, shared components, role routes and product pages.
+- `frontend/src/tests/`, `frontend/e2e/`: client/component regressions and optional real-API browser checks.
 - `.github/workflows/ci.yml`: dependency installation, Ruff, tests, and PostgreSQL migration checks.
 
 `backend/app/auth/` contains auth models, schemas, security helpers, dependencies, routes, services, and persistence queries. Authentication follows Router → Service → Repository → Database without generic base repositories. Infrastructure health checks query the database directly.
@@ -194,4 +225,4 @@ The test image uses locked dependencies and includes Alembic migrations. The tes
 
 `backend/app/learning/` contains enrollment/progress models, schemas, queries, and services. Its router reuses current-state auth dependencies and the same database sessions. Integration tests cover concurrency and learning-record preservation in the isolated test database.
 
-See [PROJECT_SPEC.md](PROJECT_SPEC.md) for scope and phases, [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for the future frontend, and [AGENTS.md](AGENTS.md) for project contribution rules. Use Git for version control; no automatic snapshots or duplicate source backups. Never commit `.env` files, push, deploy, or run destructive database commands without authorization.
+See [PROJECT_SPEC.md](PROJECT_SPEC.md) for scope and phases, [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for the frontend, and [AGENTS.md](AGENTS.md) for project contribution rules. Use Git for version control; no automatic snapshots or duplicate source backups. Never commit `.env` files, push, deploy, or run destructive database commands without authorization.
