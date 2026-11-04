@@ -7,6 +7,7 @@ from app.auth import models  # noqa: F401 -- register model metadata for Alembic
 from app.core.config import get_settings
 from app.courses import models as course_models  # noqa: F401 -- register course metadata
 from app.db.base import Base
+from app.learning import models as learning_models  # noqa: F401 -- register learning metadata
 
 config = context.config
 if config.config_file_name is not None:

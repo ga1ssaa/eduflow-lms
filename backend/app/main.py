@@ -9,7 +9,7 @@ from app.core.config import get_settings
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    application = FastAPI(title="EduFlow LMS API", version="0.3.0")
+    application = FastAPI(title="EduFlow LMS API", version="0.4.0")
     origins = list(dict.fromkeys(settings.cors_origins + settings.auth_allowed_origins))
     if origins:
         application.add_middleware(

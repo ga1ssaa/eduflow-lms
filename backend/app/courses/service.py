@@ -25,6 +25,7 @@ from app.courses.schemas import (
     OrderUpdate,
     PublicCourseDetail,
 )
+from app.learning import repository as learning_repository
 
 
 @contextmanager
@@ -170,6 +171,10 @@ def delete_course(db: Session, user: User, course_id: UUID) -> None:
         course = _owned_course(db, user, course_id, lock=True)
         if course.status == "published":
             raise HTTPException(status_code=409, detail="Unpublish the course before deleting it")
+        if learning_repository.course_has_enrollments(db, course.id):
+            raise HTTPException(
+                status_code=409, detail="Courses with enrollments cannot be deleted"
+            )
         # Explicit draft-course deletion intentionally cascades through its curriculum.
         db.delete(course)
 
@@ -219,6 +224,10 @@ def update_module(db: Session, user: User, module_id: UUID, payload: ModuleUpdat
 def delete_module(db: Session, user: User, module_id: UUID) -> None:
     with _write(db):
         course, module = _module_course(db, user, module_id)
+        if learning_repository.module_has_progress(db, module.id):
+            raise HTTPException(
+                status_code=409, detail="Modules with learning progress cannot be deleted"
+            )
         db.delete(module)
         db.flush()
         # Module deletion deliberately deletes its lessons, then closes the position gap.
@@ -275,6 +284,10 @@ def update_lesson(db: Session, user: User, lesson_id: UUID, payload: LessonUpdat
 def delete_lesson(db: Session, user: User, lesson_id: UUID) -> None:
     with _write(db):
         course, lesson = _lesson_course(db, user, lesson_id)
+        if learning_repository.lesson_has_progress(db, lesson.id):
+            raise HTTPException(
+                status_code=409, detail="Lessons with learning progress cannot be deleted"
+            )
         module = repository.module_by_id(db, lesson.module_id, course.id)
         db.delete(lesson)
         db.flush()

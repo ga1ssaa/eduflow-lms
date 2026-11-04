@@ -4,7 +4,7 @@
 
 EduFlow is a portfolio learning management system for publishing structured courses, enrolling learners, and tracking completion. It should demonstrate a professional, maintainable product with a small operational footprint and a fast local development loop.
 
-**Phases 1–3 cover foundation, identity, and course management.** Foundation provides application startup, health endpoints, configuration, database connectivity, migrations, containers, automated checks, and documentation. Identity adds authentication, refresh rotation, role dependencies, and explicit administrator bootstrap. Course management adds instructor-owned drafts, ordered curriculum, publishing, admin moderation, and a published-only public catalog. Enrollment, learning workflows, dashboards, and the frontend remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
+**Phases 1–4 cover the core backend.** Foundation provides the API, configuration, database, migrations, containers, and checks. Identity adds authentication, refresh rotation, roles, and administrator bootstrap. Course management adds authoring, publishing, moderation, and a public catalog. Learning adds enrollment, protected student content, completion, derived progress, dashboard data, and instructor statistics. The frontend and later product polish remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
 
 ## Technology
 
@@ -73,8 +73,8 @@ Keep configuration and shared infrastructure separate from feature modules. Add 
 | Course | Instructor-owned product, unique slug, title, description, category, constrained level/publication state, UTC timestamps | Phase 3 |
 | Module | Ordered titled section belonging to one course; positive unique position per course | Phase 3 |
 | Lesson | Ordered content/video belonging to one module; positive unique position per module | Phase 3 |
-| Enrollment | Student membership in a course; unique per student and course | Future |
-| Lesson completion | Completion record; unique per enrollment and lesson | Future |
+| Enrollment | UUID, student/course foreign keys, UTC enrollment timestamp; unique per student and course | Phase 4 |
+| LessonProgress | UUID, enrollment/lesson foreign keys, UTC completion timestamp; unique per enrollment and lesson | Phase 4 |
 
 Confirm field types and deletion policies when each feature is designed. Enforce relationship integrity and uniqueness in PostgreSQL. Derive progress from eligible lessons and completion records; define behavior for newly added or unpublished lessons before exposing percentages. Avoid storing a second mutable progress total without a demonstrated need.
 
@@ -85,7 +85,7 @@ Confirm field types and deletion policies when each feature is designed. Enforce
 - Provide course CRUD and publish/unpublish endpoints under `/api/v1/instructor/courses`, child management under `/api/v1/instructor/modules` and `/api/v1/instructor/lessons`, and exact-parent `/modules/order` and `/lessons/order` endpoints. Reuse auth dependencies and request-scoped synchronous sessions.
 - Reordering accepts exactly the complete current set of child IDs once. Reject foreign, duplicate, missing, and stale sets without partial writes. Serialize curriculum mutations on the course row and use deferrable parent-position unique constraints. Assign contiguous positions on append/delete/reorder.
 - Publishing requires a valid title, nonempty description and category, at least one module and one total lesson, and a title plus content or valid HTTP(S) video URL for every lesson. Repeated publishing is safe and preserves the current publication date. Unpublishing clears that date. Validate published edits in the same transaction and roll back changes that invalidate publication.
-- Only drafts can be deleted. Explicit course deletion removes its owned modules and lessons; explicit module deletion removes its lessons. User foreign keys restrict deletion of referenced instructors. No soft-delete mechanism is introduced.
+- Only drafts without enrollments can be deleted. Course/module cascades apply only where no learning records would be lost. Completed lessons and modules containing completion records are protected from deletion. User foreign keys restrict deletion of referenced instructors. No soft-delete mechanism is introduced.
 - Public `/api/v1/courses` supports bounded pagination, literal case-insensitive title search, category and level filters, deterministic ordering, instructor names, and curriculum counts without N+1 queries. Public `/{slug}` exposes only a published course and ordered titles; never lesson content or video URLs. Drafts are not discoverable publicly.
 - Admin-only `/api/v1/admin/courses` supports listing, full details, publishing, and unpublishing under the same validation rules. No separate moderation workflow is introduced.
 - Enrollment, student access to full lesson content, progress, dashboards, and frontend screens are excluded from this phase.
@@ -98,6 +98,18 @@ Confirm field types and deletion policies when each feature is designed. Enforce
 - Add bounded pagination and deterministic ordering to future list endpoints.
 - Use JWT access tokens, revocable refresh sessions, and current-state role checks. Enforce resource ownership checks for course authoring.
 - Design API behavior for the frontend without coupling backend modules to a browser implementation.
+
+## Phase 4 learning requirements
+
+- Only current active students enroll in published courses, using authenticated identity. Unique constraints and transactional upserts make enrollment and completion idempotent under concurrency. Instructor/admin roles cannot use student learning routes.
+- Own enrollment listings include dates, course availability, and derived progress. Published enrolled-course details include curriculum outlines; full lesson content and video URLs require the protected enrolled-student endpoint. Never expose another student's enrollment or completions.
+- Unpublishing preserves enrollments and completion records but blocks protected course/lesson/progress access and completion changes until republished. Own listings/dashboard retain basic enrollment metadata and numeric progress, without draft curriculum or content.
+- Completion records represent completed lessons only. Marking incomplete intentionally removes the record. Calculate counts from lessons belonging to the enrolled course, not client values or cached percentages. Round percentages to two decimals with decimal `ROUND_HALF_UP`; zero lessons is 0% and incomplete. Determine completion from counts, not rounded percentages.
+- Adding lessons can reduce a previously complete percentage. Removing uncompleted lessons changes the denominator. Reject course deletion when enrolled and reject lesson/module deletion that would remove completions. Foreign keys preserve learning records even if an operation bypasses API checks.
+- Database triggers validate completion course membership and prohibit reparenting enrollment identity, module course, or lesson module. Preserve existing rows and tables through additive migrations.
+- Student dashboard data uses real enrollments and current progress: total, completed, remaining in-progress, per-course summaries, and enrollment dates. Zero-progress courses count as in-progress.
+- Instructor students/statistics endpoints require ownership or explicit admin authorization and use bounded SQL query counts. Include actual enrollment/completion totals and progress summaries without passwords, hashes, tokens, or authentication secrets.
+- Learning operations coordinate with existing course locks and return response snapshots within protected transactions. Do not introduce payments, certificates, quizzes, messaging, video hosting, or frontend code.
 
 ## Delivery phases
 
@@ -128,3 +140,5 @@ For later features, also require authorization tests, success and failure cases,
 For Phase 2, require registration/login validation, JWT rejection cases, real PostgreSQL refresh rotation and concurrency tests, logout cookie clearing, all role combinations and inactive-user checks, CLI bootstrap checks, and unchanged health endpoints. Validate migrations on an isolated database without resetting development data. Run pytest, Ruff lint/format, and an independent security review. Document any unavailable verification rather than treating a skipped integration suite as completion.
 
 For Phase 3, also require real PostgreSQL course/curriculum CRUD, ownership and admin checks, publication invariants, atomic reorder and rollback tests, foreign-key/unique/check-constraint tests, catalog visibility/filtering/pagination/counts, and public content-leakage checks. Preserve all earlier-phase tests. Apply the additive migration without resetting development data and confirm Alembic metadata matches the database.
+
+For Phase 4, require isolated PostgreSQL tests for enrollment/access/complete/incomplete, duplicate and concurrent requests, role/ownership restrictions, publication changes, rounding, curriculum changes, dashboard/statistics values, deletion safeguards, and database cross-course integrity. Preserve all earlier tests and development data. Verify migration, complete pytest suite, Ruff, live health/auth restrictions, and an independent final review.

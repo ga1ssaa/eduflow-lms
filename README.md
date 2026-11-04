@@ -1,6 +1,6 @@
 # EduFlow LMS
 
-A backend-first learning management system built as a modular monolith. Phase 1 provides the API and database foundation. Phase 2 adds authentication and role-based authorization. Phase 3 adds course authoring, ordered modules and lessons, publishing, administration, and a public course catalog. Enrollment, learning progress, and the frontend come in later phases.
+A backend-first learning management system built as a modular monolith. Phases 1–3 provide the API foundation, authentication, course authoring, publication, and public catalog. Phase 4 adds student enrollment, protected learning content, lesson completion, progress, student dashboard data, and instructor statistics. The frontend comes next.
 
 ## Run with Docker
 
@@ -46,7 +46,7 @@ docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -
 docker compose stop
 ```
 
-The named `postgres_data` volume persists between restarts. Do not remove it or use volume deletion commands without explicit approval. Migrations run explicitly; application startup never creates tables. Migration `0001` establishes the baseline; `0002` adds users and refresh sessions; `0003` adds courses, modules, and lessons. Downgrading these feature migrations deletes their tables and must never be used on valuable data without approval.
+The named `postgres_data` volume persists between restarts. Do not remove it or use volume deletion commands without explicit approval. Migrations run explicitly; application startup never creates tables. Migration `0001` establishes the baseline; `0002` adds identity; `0003` adds curriculum; `0004` adds enrollments, lesson progress, and integrity triggers. Downgrading feature migrations deletes their tables and must never be used on valuable data without approval.
 
 ## Authentication
 
@@ -106,11 +106,36 @@ Course creation requires `title` and `slug`; optional fields are `description`, 
 
 Module creation takes `title`. Lesson creation takes `title`, optional `content`, and optional HTTP(S) `video_url`. PATCH changes only supplied fields; `video_url: null` clears the video. Positions are positive, server-assigned, and unique within a parent. Reorder bodies are `{"ids": ["<UUID>", "<UUID>"]}` and must contain exactly all current child IDs once. Parent-course row locks serialize structural edits; deferrable unique constraints let valid swaps commit atomically. No ordering library is used.
 
-Publishing requires a title, nonempty description and category, at least one module and one lesson, and a title plus content or valid video URL for every lesson. Repeated publish requests preserve the current publication date. Unpublish clears it; republishing sets a new date. Edits and deletions that would make a published course invalid are rejected and rolled back. Unpublish before deleting a published course. Explicit draft-course deletion cascades through its curriculum; explicit module deletion removes its lessons in the same transaction. No unrelated records are deleted.
+Publishing requires a title, nonempty description and category, at least one module and one lesson, and a title plus content or valid video URL for every lesson. Repeated publish requests preserve the current publication date. Unpublish clears it; republishing sets a new date. Edits and deletions that would make a published course invalid are rejected and rolled back. Unpublish before deleting a published course. Courses with enrollments cannot be deleted. Lessons with completion records, and modules containing such lessons, cannot be deleted. For curriculum without learning records, explicit draft-course/module deletion retains its transactional cascade behavior.
 
-Public listings accept `page` (default 1), `page_size` (default 20, maximum 100), case-insensitive literal title `search`, exact `category`, and `level`. Responses contain `items`, `total`, `page`, and `page_size`, ordered by creation time descending and UUID ascending. Each item includes instructor name and module/lesson counts. Public details include ordered module and lesson titles; they never include lesson content or video URLs. Drafts return 404 publicly. Authoring details are protected; student lesson-content access belongs to Phase 4.
+Public listings accept `page` (default 1), `page_size` (default 20, maximum 100), case-insensitive literal title `search`, exact `category`, and `level`. Responses contain `items`, `total`, `page`, and `page_size`, ordered by creation time descending and UUID ascending. Each item includes instructor name and module/lesson counts. Public details include ordered module and lesson titles; they never include lesson content or video URLs. Drafts return 404 publicly. Full student lesson content requires the enrolled-student endpoint below.
 
 Course mutations use Bearer authentication rather than ambient refresh cookies, so the auth endpoints' CSRF marker is not required for these routes. CORS allows the PATCH, PUT, and DELETE methods needed by a future browser client. Validation errors use 422, denied roles or ownership use 403, absent resources use 404, and business-state conflicts use 409.
+
+## Enrollment and learning
+
+All learning endpoints require a Bearer token and a current active `student` role. Instructors and admins use their existing authorized management endpoints for content access. Student IDs, completion counts, and percentages are never accepted from a client.
+
+| Endpoint | Behavior |
+| --- | --- |
+| `POST /api/v1/courses/{course_id}/enroll` | Enroll in a published course; repeated/concurrent requests return the same enrollment without duplicates. |
+| `GET /api/v1/students/me/courses` | Paginated own enrollments with course metadata, availability, enrollment dates, and progress. |
+| `GET /api/v1/students/me/courses/{course_id}` | Published enrolled course outline and own progress. |
+| `GET /api/v1/students/me/lessons/{lesson_id}` | Protected content/video, course/module context, and own completion state. |
+| `POST /api/v1/students/me/lessons/{lesson_id}/complete` | Idempotently mark complete and return current course progress. |
+| `DELETE /api/v1/students/me/lessons/{lesson_id}/complete` | Idempotently mark incomplete and return recalculated progress. |
+| `GET /api/v1/students/me/courses/{course_id}/progress` | Actual lesson/completion counts, percentage, and completion flag. |
+| `GET /api/v1/students/me/dashboard` | Enrolled/completed/in-progress course counts and enrollment progress summaries. |
+| `GET /api/v1/instructor/courses/{course_id}/students` | Paginated enrollment and student progress summaries; owner or admin only. |
+| `GET /api/v1/instructor/courses/{course_id}/stats` | Enrollment/completion counts and average progress; owner or admin only. |
+
+Enrollment and completion writes return HTTP 200, including repeats. Enrollment has no required body; extra identity fields are rejected. Completion responses include `lesson_id`, `is_completed`, `completed_at`, and a `progress` object. Missing, unenrolled, or unpublished protected resources return 404. Inactive accounts return 401; disallowed roles and cross-instructor statistics requests return 403.
+
+Progress counts only current lessons in the enrolled course. Percentages use decimal rounding to two places with `ROUND_HALF_UP`: 1/3 → 33.33, 2/3 → 66.67, 7/10 → 70. Zero lessons means 0% and `is_completed=false`; completion otherwise requires all lessons, independently of the rounded percentage. No percentage is stored. New lessons can turn a completed course into an in-progress course. Removing an uncompleted lesson reduces the denominator; removing completed lessons is blocked. Marking incomplete intentionally removes that completion record.
+
+Own course listings and dashboard retain enrollment metadata and numeric progress when a course is unpublished, with `is_available=false`; they expose no draft curriculum or lesson content. Course detail, lesson access, progress detail, and completion changes are blocked until republished. Dashboard in-progress counts include every enrolled course that is not complete, including courses with zero progress. Instructor statistics retain enrolled users even if their role or active state changes, without exposing authentication data.
+
+Course row locks coordinate learning writes with publication and curriculum edits. Protected detail reads hold shared locks while constructing response snapshots. Unique constraints prevent duplicate enrollments/completions; foreign keys preserve learning records. A PostgreSQL trigger rejects cross-course completion links, and parent-identity triggers prevent reparenting enrollments, modules, and lessons. There is no unenrollment or archival workflow in this phase.
 
 ## Local Python development
 
@@ -166,5 +191,7 @@ The test image uses locked dependencies and includes Alembic migrations. The tes
 `backend/app/auth/` contains auth models, schemas, security helpers, dependencies, routes, services, and persistence queries. Authentication follows Router → Service → Repository → Database without generic base repositories. Infrastructure health checks query the database directly.
 
 `backend/app/courses/` contains course models, schemas, persistence queries, and business services. Public, instructor, and admin routers reuse these services and the existing database sessions; publication and ownership rules are shared.
+
+`backend/app/learning/` contains enrollment/progress models, schemas, queries, and services. Its router reuses current-state auth dependencies and the same database sessions. Integration tests cover concurrency and learning-record preservation in the isolated test database.
 
 See [PROJECT_SPEC.md](PROJECT_SPEC.md) for scope and phases, [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for the future frontend, and [AGENTS.md](AGENTS.md) for project contribution rules. Use Git for version control; no automatic snapshots or duplicate source backups. Never commit `.env` files, push, deploy, or run destructive database commands without authorization.
