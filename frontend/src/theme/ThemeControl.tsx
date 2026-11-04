@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { SelectControl } from '../components/SelectControl';
 type Theme = 'light' | 'dark' | 'system';
 export function ThemeControl() {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -27,7 +28,7 @@ export function ThemeControl() {
   return (
     <label className="theme-control">
       <span className="sr-only">Color theme</span>
-      <select
+      <SelectControl
         aria-label="Color theme"
         value={theme}
         onChange={(e) => setTheme(e.target.value as Theme)}
@@ -35,7 +36,7 @@ export function ThemeControl() {
         <option value="light">Light</option>
         <option value="dark">Dark</option>
         <option value="system">System</option>
-      </select>
+      </SelectControl>
     </label>
   );
 }

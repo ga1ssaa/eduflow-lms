@@ -178,7 +178,7 @@ test('instructor statistics and admin moderation respect role workspaces', async
 
 test('light, dark and mobile layouts remain usable', async ({ page }) => {
   await page.goto('/courses');
-  await expect(page.locator('.course-card').first()).toBeVisible();
+  await expect(page.locator('.catalog-course-card').first()).toBeVisible();
   await page.getByLabel('Color theme').selectOption('light');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.screenshot({

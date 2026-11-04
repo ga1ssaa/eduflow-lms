@@ -7,11 +7,18 @@ import {
   Routes,
   useLocation,
 } from 'react-router-dom';
-import { BookOpen, GraduationCap, Menu } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BookOpen,
+  ChevronDown,
+  GraduationCap,
+  Menu,
+} from 'lucide-react';
 import { useAuth } from './auth/AuthProvider';
 import type { Role } from './lib/types';
 import { ErrorPanel, Loading } from './components/ui';
 import { ThemeControl } from './theme/ThemeControl';
+import { CatalogAnchor } from './components/catalog/CatalogAnchor';
 import { CatalogPage, CoursePage } from './pages/Catalog';
 import { AuthPage } from './pages/Auth';
 import { LearningPage, LessonPage } from './pages/Learning';
@@ -74,9 +81,37 @@ function Protected({
     );
   return children;
 }
+function CatalogFrame({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: ReactNode;
+}) {
+  return active ? (
+    <div className="catalog-shell">{children}</div>
+  ) : (
+    <>{children}</>
+  );
+}
 function Shell() {
   const auth = useAuth();
   const location = useLocation();
+  const isCatalog = location.pathname === '/courses';
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    if (!isCatalog || !location.hash) return;
+    const target = document.getElementById(location.hash.slice(1));
+    target?.scrollIntoView({ block: 'start' });
+    if (target?.id === 'main') target.focus({ preventScroll: true });
+  }, [isCatalog, location.hash, location.key]);
+  useEffect(() => {
+    if (!isCatalog) return;
+    const update = () => setCompact(window.scrollY > 24);
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, [isCatalog]);
   const mobileTrigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<unknown>(null);
@@ -100,7 +135,22 @@ function Shell() {
     setOpen(false);
     mobileTrigger.current?.focus();
   };
-  const nav = (
+  const nav = isCatalog ? (
+    <>
+      <CatalogAnchor hash="#courses" onClick={close}>
+        Explore Courses
+      </CatalogAnchor>
+      <CatalogAnchor hash="#how-it-works" onClick={close}>
+        How It Works
+      </CatalogAnchor>
+      <CatalogAnchor hash="#for-instructors" onClick={close}>
+        For Instructors
+      </CatalogAnchor>
+      <CatalogAnchor hash="#about" onClick={close}>
+        About
+      </CatalogAnchor>
+    </>
+  ) : (
     <>
       <NavLink to="/courses" onClick={close}>
         Catalog
@@ -143,11 +193,23 @@ function Shell() {
     }
   };
   return (
-    <>
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-      <header className="site-header">
+    <CatalogFrame active={isCatalog}>
+      {isCatalog ? (
+        <CatalogAnchor className="skip-link" hash="#main">
+          Skip to content
+        </CatalogAnchor>
+      ) : (
+        <a className="skip-link" href="#main">
+          Skip to content
+        </a>
+      )}
+      <header
+        className={
+          isCatalog
+            ? `site-header catalog-page-header${compact ? ' is-compact' : ''}`
+            : 'site-header'
+        }
+      >
         <div className="header-inner">
           <Link to="/courses" className="brand" aria-label="EduFlow home">
             <span className="brand-mark">
@@ -174,7 +236,10 @@ function Shell() {
                   }
                 }}
               >
-                <summary aria-label="Account menu">
+                <summary
+                  aria-label="Account menu"
+                  className={isCatalog ? 'catalog-account-trigger' : undefined}
+                >
                   <span className="avatar">
                     {auth.user.full_name
                       .split(/\s+/)
@@ -183,11 +248,32 @@ function Shell() {
                       .join('')
                       .toUpperCase()}
                   </span>
+                  {isCatalog && (
+                    <ChevronDown
+                      className="catalog-account-chevron"
+                      size={16}
+                      aria-hidden="true"
+                    />
+                  )}
                 </summary>
                 <div className="account-panel">
                   <strong>{auth.user.full_name}</strong>
                   <span>{auth.user.email}</span>
                   <span className="role-label">{auth.user.role}</span>
+                  {isCatalog && (
+                    <Link
+                      className="catalog-role-link"
+                      to={
+                        auth.user.role === 'student'
+                          ? '/learning'
+                          : auth.user.role === 'admin'
+                            ? '/admin'
+                            : '/instructor'
+                      }
+                    >
+                      Go to my workspace
+                    </Link>
+                  )}
                   <button
                     className="button secondary"
                     disabled={loggingOut}
@@ -211,6 +297,23 @@ function Shell() {
             ) : (
               <Link className="button primary" to="/login">
                 Sign in
+              </Link>
+            )}
+            {isCatalog && !auth.error && auth.status !== 'loading' && (
+              <Link
+                className="button catalog-start"
+                to={
+                  auth.user
+                    ? auth.user.role === 'student'
+                      ? '/learning'
+                      : auth.user.role === 'admin'
+                        ? '/admin'
+                        : '/instructor'
+                    : '/register'
+                }
+              >
+                {auth.user ? 'Workspace' : 'Get Started'}{' '}
+                <ArrowUpRight size={18} aria-hidden="true" />
               </Link>
             )}
             <button
@@ -238,10 +341,30 @@ function Shell() {
             }}
           >
             {nav}
+            {isCatalog && (
+              <Link
+                onClick={close}
+                to={
+                  auth.user
+                    ? auth.user.role === 'student'
+                      ? '/learning'
+                      : auth.user.role === 'admin'
+                        ? '/admin'
+                        : '/instructor'
+                    : '/register'
+                }
+              >
+                {auth.user ? 'Go to workspace' : 'Get Started'}
+              </Link>
+            )}
           </nav>
         )}
       </header>
-      <main id="main" className="main-container" tabIndex={-1}>
+      <main
+        id="main"
+        className={isCatalog ? 'catalog-main' : 'main-container'}
+        tabIndex={-1}
+      >
         {logoutError != null && (
           <ErrorPanel error={logoutError} retry={() => void logout()} />
         )}
@@ -366,7 +489,7 @@ function Shell() {
         <span>EduFlow</span>
         <span>A clear path to your next skill.</span>
       </footer>
-    </>
+    </CatalogFrame>
   );
 }
 export default function App() {

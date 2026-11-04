@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowRight, BookOpen, Layers3, Search } from 'lucide-react';
+import {
+  ArrowRight,
+  ArrowUpRight,
+  ArrowDown,
+  BookOpen,
+  Search,
+} from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../auth/AuthProvider';
 import type { Level } from '../lib/types';
@@ -10,13 +16,22 @@ import {
   ErrorPanel,
   Loading,
   PageHeading,
-  Pagination,
   usePage,
 } from '../components/ui';
 import type { FormEvent } from 'react';
+import { useCatalogFeed, useCatalogSentinel } from '../hooks/useCatalogFeed';
+import {
+  CatalogHero,
+  CatalogCourseCard,
+  CatalogSkeletons,
+  CatalogSections,
+} from '../components/catalog/CatalogVisuals';
+import '../catalog.css';
+import { SelectControl } from '../components/SelectControl';
+import { CatalogAnchor } from '../components/catalog/CatalogAnchor';
 
 export function CatalogPage() {
-  const { params, setParams, page, setPage } = usePage();
+  const { params, setParams } = usePage();
   const rawLevel = params.get('level');
   const level = ['beginner', 'intermediate', 'advanced'].includes(
     rawLevel ?? '',
@@ -24,19 +39,27 @@ export function CatalogPage() {
     ? (rawLevel as Level)
     : undefined;
   const filters = {
-    page,
-    page_size: 12,
     search: params.get('search') || undefined,
     category: params.get('category') || undefined,
     level,
   };
-  const query = useQuery({
-    queryKey: ['catalog', filters],
-    queryFn: ({ signal }) => api.catalog(filters, signal),
+  const {
+    query,
+    courses,
+    total,
+    hasCurrentCount,
+    hasPreviousResults,
+    loadMore,
+  } = useCatalogFeed(filters);
+  const sentinel = useCatalogSentinel({
+    enabled: !!query.hasNextPage && !query.isError,
+    isFetching: query.isFetching,
+    isFetchNextPageError: query.isFetchNextPageError,
+    fetchNextPage: loadMore,
   });
-  const submit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const data = new FormData(e.currentTarget);
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
     const next = new URLSearchParams();
     for (const key of ['search', 'category', 'level']) {
       const value = String(data.get(key) ?? '').trim();
@@ -45,120 +68,179 @@ export function CatalogPage() {
     setParams(next);
   };
   return (
-    <>
-      <PageHeading
-        eyebrow="THE COURSE CATALOG"
-        title="Make room for what’s next."
+    <div className="catalog-experience">
+      <CatalogHero
+        action={
+          <CatalogAnchor className="button primary" hash="#courses">
+            Explore courses <ArrowUpRight size={19} aria-hidden="true" />
+          </CatalogAnchor>
+        }
+        secondaryAction={
+          <CatalogAnchor className="button secondary" hash="#how-it-works">
+            See how it works <ArrowRight size={18} aria-hidden="true" />
+          </CatalogAnchor>
+        }
+      />
+      <section
+        id="courses"
+        className="catalog-listing"
+        aria-labelledby="catalog-heading"
       >
-        <p>Explore courses, build your skills, and learn at your own pace.</p>
-      </PageHeading>
-      <form
-        className="filter-bar surface"
-        onSubmit={submit}
-        key={`${filters.search}-${filters.category}-${level}`}
-      >
-        <label className="search-field">
-          <span>Search courses</span>
-          <div className="input-icon">
-            <Search size={18} aria-hidden="true" />
-            <input
-              name="search"
-              maxLength={200}
-              defaultValue={filters.search}
-              placeholder="What would you like to learn?"
-            />
+        <div className="catalog-results-heading">
+          <div>
+            <p className="catalog-kicker">FIND YOUR NEXT CHAPTER</p>
+            <h2 id="catalog-heading">Curiosity looks good on you.</h2>
           </div>
-        </label>
-        <label>
-          <span>Category</span>
-          <input
-            name="category"
-            maxLength={100}
-            defaultValue={filters.category}
-            placeholder="Any category"
-          />
-        </label>
-        <label>
-          <span>Level</span>
-          <select name="level" defaultValue={level ?? ''}>
-            <option value="">All levels</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </label>
-        <button className="button primary" type="submit">
-          Find courses
-        </button>
-      </form>
-      <div className="section-heading">
-        <h2>Explore courses</h2>
-        {query.data && (
-          <span className="result-count">
-            {query.data.total} courses available
-          </span>
-        )}
-      </div>
-      {query.isPending ? (
-        <Loading label="Finding courses…" />
-      ) : query.isError ? (
-        <ErrorPanel error={query.error} retry={() => void query.refetch()} />
-      ) : (
-        <>
-          {query.data.items.length === 0 ? (
-            <Empty title="No courses found">
-              <p>Try a different search or clear your filters.</p>
-              <Link to="/courses" className="text-link">
-                Clear filters
-              </Link>
-            </Empty>
-          ) : (
-            <div className="course-grid">
-              {query.data.items.map((course) => (
-                <article className="course-card surface" key={course.id}>
-                  <div className="course-card-top">
-                    <span className="course-icon">
-                      <BookOpen size={24} aria-hidden="true" />
-                    </span>
-                    <Badge>{course.level}</Badge>
-                  </div>
-                  <p className="category-label">
-                    {course.category || 'Course'}
-                  </p>
-                  <h3>
-                    <Link to={`/courses/${course.slug}`}>{course.title}</Link>
-                  </h3>
-                  <p className="course-description">
-                    {course.description ||
-                      'Explore the course outline to see what you’ll learn.'}
-                  </p>
-                  <p className="instructor">By {course.instructor_name}</p>
-                  <div className="course-card-bottom">
-                    <span>
-                      <Layers3 size={16} aria-hidden="true" />
-                      {course.module_count} modules · {course.lesson_count}{' '}
-                      lessons
-                    </span>
-                    <Link
-                      to={`/courses/${course.slug}`}
-                      aria-label={`View ${course.title}`}
-                    >
-                      <ArrowRight size={20} aria-hidden="true" />
-                    </Link>
-                  </div>
-                </article>
-              ))}
+          <p role="status" className="catalog-result-count">
+            {hasCurrentCount
+              ? `${total} courses available`
+              : query.isPaused
+                ? 'Waiting for connection…'
+                : query.isFetching
+                  ? 'Updating courses…'
+                  : query.isError
+                    ? 'Course total unavailable'
+                    : ''}
+          </p>
+        </div>
+        <form
+          className="catalog-filter"
+          onSubmit={submit}
+          key={`${filters.search}-${filters.category}-${level}`}
+          aria-label="Filter courses"
+        >
+          <label className="catalog-search">
+            <span>Search courses</span>
+            <div className="catalog-input-icon">
+              <Search size={18} aria-hidden="true" />
+              <input
+                name="search"
+                maxLength={200}
+                defaultValue={filters.search}
+                placeholder="What would you like to learn?"
+              />
             </div>
-          )}
-          <Pagination
-            page={page}
-            size={query.data.page_size}
-            total={query.data.total}
-            onChange={setPage}
-          />
-        </>
-      )}
-    </>
+          </label>
+          <label>
+            <span>Category</span>
+            <input
+              name="category"
+              maxLength={100}
+              defaultValue={filters.category}
+              placeholder="Any category"
+            />
+          </label>
+          <label>
+            <span>Level</span>
+            <SelectControl
+              name="level"
+              aria-label="Level"
+              defaultValue={level ?? ''}
+            >
+              <option value="">All levels</option>
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </SelectControl>
+          </label>
+          <button className="button primary" type="submit">
+            Find courses <Search size={16} aria-hidden="true" />
+          </button>
+        </form>
+        {query.isPending ? (
+          <div aria-label="Loading courses" role="status">
+            <span className="sr-only">Finding courses…</span>
+            <CatalogSkeletons count={6} />
+          </div>
+        ) : (
+          <>
+            {query.isError && (
+              <div className="catalog-feedback">
+                <ErrorPanel
+                  error={query.error}
+                  retry={
+                    query.isFetchNextPageError
+                      ? undefined
+                      : () => void query.refetch()
+                  }
+                />
+                {hasPreviousResults && (
+                  <p className="catalog-previous-results">
+                    Previously loaded results are shown below. The course total
+                    could not be verified.
+                  </p>
+                )}
+              </div>
+            )}
+            {courses.length > 0 ? (
+              <div className="catalog-grid">
+                {courses.map((course, index) => (
+                  <CatalogCourseCard
+                    key={course.id}
+                    course={course}
+                    index={index}
+                  />
+                ))}
+              </div>
+            ) : (
+              !query.isError && (
+                <div className="catalog-feedback">
+                  <Empty title="No courses found">
+                    <p>
+                      {filters.search || filters.category || level
+                        ? 'A different search might open a new door. Try another topic or clear your filters.'
+                        : 'A new chapter is on its way. Published courses will appear here when they’re ready.'}
+                    </p>
+                    {(filters.search || filters.category || level) && (
+                      <Link to="/courses#courses" className="text-link">
+                        Clear filters
+                      </Link>
+                    )}
+                  </Empty>
+                </div>
+              )
+            )}
+            {query.isFetchingNextPage && (
+              <div role="status" aria-label="Loading more courses">
+                <span className="sr-only">Loading more courses…</span>
+                <CatalogSkeletons count={3} />
+              </div>
+            )}
+            <div
+              ref={sentinel}
+              className="catalog-sentinel"
+              aria-hidden="true"
+            />
+            {(query.hasNextPage || query.isFetchNextPageError) && (
+              <div className="catalog-loadmore">
+                <button
+                  className="button secondary"
+                  disabled={query.isFetching || query.isPaused}
+                  onClick={() => void loadMore()}
+                >
+                  {query.isPaused
+                    ? 'Waiting for connection…'
+                    : query.isFetchingNextPage
+                      ? 'Loading courses…'
+                      : query.isFetchNextPageError
+                        ? 'Retry loading more'
+                        : 'Load more courses'}
+                  <ArrowDown size={17} aria-hidden="true" />
+                </button>
+                <p>Keep exploring. Learn at your own pace.</p>
+              </div>
+            )}
+            {!query.hasNextPage && courses.length > 0 && !query.isError && (
+              <p className="catalog-end" role="status">
+                You’re all caught up. A new skill starts with a little
+                curiosity.
+              </p>
+            )}
+          </>
+        )}
+      </section>
+      <CatalogSections />
+    </div>
   );
 }
 export function CoursePage() {

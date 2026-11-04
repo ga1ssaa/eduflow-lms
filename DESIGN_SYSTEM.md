@@ -39,6 +39,14 @@ Contrast ratios below use the WCAG relative-luminance calculation, rounded to tw
 
 Dark primary blue also needs attention when used for normal-size link text on a dark surface. Verify the exact pairing, or use a lighter verified link token with an underline. Decorative accent fills do not replace accessible focus or status indicators.
 
+## Public catalog visual preview
+
+The `/courses` catalog has a separate art-directed composition informed by `design-references/light-reference.jpg` and `design-references/dark-reference.jpg`: a centered editorial hero, floating translucent navigation capsule, layered blue/cyan-to-white lighting and irregular edge pixels in Light Mode, and vertical blue rays with orange underlighting over midnight tones in Dark Mode. Ignore social-media overlays in the references; never invent course statistics, charts, or media content to reproduce their foreground panels.
+
+Light course cards use white surfaces and dark typography. Dark course cards and covers use `#101A24`, primary text `#F8FAFC`, secondary text `#94A3B8`, and subtle blue borders. Dark primary actions use Electric Blue with dark foregrounds; orange provides accent emphasis. This replaces the earlier white-card treatment in Dark Mode. Scoped `--catalog-*` tokens and `.catalog-shell` rules keep this treatment out of course details, authentication, learning, instructor, and admin screens. Card entrances run once, respect reduced motion, and never gate access to content. Obtain user visual approval before extending this redesign beyond the catalog.
+
+Shared native select controls use `SelectControl`: one decorative Lucide `ChevronDown`, native browser arrows hidden, 44px height, 16px left padding and right icon inset, 50px reserved right padding, and a visible 2px focus ring with 2px offset. Keep keyboard selection native. Theme and level controls share this geometry; category remains a text input matching the actual API. Control icons never replace accessible labels. Verify text clearance and unclipped focus at 320, 375, 768, 1024, and 1440px in both themes.
+
 ## Typography and spacing
 
 Use Inter, with a system sans-serif fallback. Default body copy is 16px with approximately 1.5 line height; secondary labels may use 14px with sufficient contrast. Use a restrained hierarchy: 32px page title, 24px section title, 20px subsection title, adjusted for small screens. Use weights 400, 500, 600, and 700 consistently. Avoid all-caps paragraphs and dense text blocks.
