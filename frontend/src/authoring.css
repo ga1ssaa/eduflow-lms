@@ -1,0 +1,217 @@
+.author-form {
+  max-width: 800px;
+  padding: 32px;
+}
+.author-form fieldset,
+.author-lesson-form fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.author-field textarea {
+  font: inherit;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  resize: vertical;
+  line-height: 1.6;
+}
+.author-field textarea[aria-invalid='true'] {
+  border-color: var(--error);
+}
+.author-field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+.author-save-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+.author-save-status {
+  color: var(--muted);
+  font-size: 13px;
+}
+.author-error {
+  padding: 16px;
+  border: 1px solid var(--error);
+  border-radius: 8px;
+  color: var(--error);
+  background: var(--error-bg);
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.author-error p {
+  margin-top: 8px;
+}
+.author-notice {
+  color: var(--subtle);
+  font-size: 14px;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  max-width: 800px;
+}
+.author-dialog {
+  position: fixed;
+  inset: 0;
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  padding: 24px;
+  margin: auto;
+  color: var(--text);
+  overflow: auto;
+}
+.author-dialog:not([open]) {
+  display: none;
+}
+.author-dialog::backdrop {
+  background: color-mix(in srgb, var(--text) 40%, transparent);
+}
+.author-dialog h2 {
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+.author-dialog-description {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.author-dialog-description p + p {
+  margin-top: 12px;
+}
+.author-dialog .author-error {
+  margin-top: 16px;
+}
+.author-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+.button.author-danger {
+  background: var(--error-bg);
+  color: var(--error);
+  border-color: var(--error);
+}
+.author-curriculum {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.author-module {
+  padding: 24px;
+}
+.author-module-heading,
+.author-lesson-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+.author-module-heading h2 {
+  font-size: 22px;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.author-structural-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.author-module-title {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 24px;
+}
+.author-module-title > .author-field {
+  flex: 1;
+  min-width: 160px;
+}
+.author-module-title > .author-error {
+  width: 100%;
+}
+.author-lesson-list {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.author-lesson {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.author-lesson .field-help,
+.author-lesson .author-save-status {
+  color: var(--subtle);
+}
+.author-lesson-heading {
+  align-items: center;
+  margin-bottom: 16px;
+}
+.author-lesson-heading h3 {
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.author-lesson-form {
+  margin-top: 24px;
+}
+.author-add-lesson {
+  margin-top: 24px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.author-add-lesson > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--link);
+}
+@media (max-width: 650px) {
+  .author-form {
+    padding: 24px;
+  }
+  .author-field-pair {
+    grid-template-columns: 1fr;
+  }
+  .author-module {
+    padding: 20px;
+  }
+  .author-module-heading,
+  .author-lesson-heading {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .author-lesson {
+    padding: 16px;
+  }
+  .author-structural-actions {
+    flex-shrink: 1;
+  }
+  .author-save-row > .button {
+    width: 100%;
+  }
+  .author-module-title > .author-field {
+    min-width: 0;
+    width: 100%;
+    flex-basis: 100%;
+  }
+}

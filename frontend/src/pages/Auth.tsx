@@ -1,12 +1,11 @@
 import { useState, type FormEvent } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { isApiError } from '../lib/client';
 import { safeReturn } from '../components/ui';
 export function AuthPage({ register = false }: { register?: boolean }) {
   const auth = useAuth();
-  const navigate = useNavigate();
   const [params] = useSearchParams();
   const destination = safeReturn(params.get('returnTo'));
   const [pending, setPending] = useState(false);
@@ -33,7 +32,6 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     try {
       if (register) await auth.register({ email, password, full_name });
       else await auth.login({ email, password });
-      navigate(destination, { replace: true });
     } catch (error) {
       if (isApiError(error)) {
         setErrors(error.fieldErrors);
@@ -49,8 +47,8 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         to={
           destination === '/learning' && auth.user.role !== 'student'
             ? auth.user.role === 'admin'
-              ? '/admin/courses'
-              : '/instructor/courses'
+              ? '/admin'
+              : '/instructor'
             : destination
         }
         replace

@@ -4,7 +4,7 @@
 
 EduFlow is a portfolio learning management system for publishing structured courses, enrolling learners, and tracking completion. It should demonstrate a professional, maintainable product with a small operational footprint and a fast local development loop.
 
-**Phases 1–4 cover the core backend.** Foundation, identity, courses, and learning provide the API. Phase 5A provides the React frontend foundation, public catalog, authentication, student learning, instructor reviews/statistics, and administrator publication moderation. Frontend authoring and later product polish remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
+**Phases 1–4 cover the core backend.** Foundation, identity, courses, and learning provide the API. Phases 5A–5B provide the React frontend: catalog, authentication, student learning, instructor dashboards and authoring, curriculum ordering, learner statistics, admin overview and publication moderation. Production QA and later product polish remain future work. Code and passing checks establish what is delivered; this document also records the roadmap.
 
 ## Technology
 
@@ -26,9 +26,9 @@ Use free local tools and existing dependencies where practical. Frontend depende
 | --- | --- |
 | Student | Browse published courses, enroll, access enrolled lessons, mark lessons complete, view personal progress |
 | Instructor | Manage owned courses, modules, and lessons; publish content; inspect progress for their learners |
-| Admin | Manage users, roles, and course availability across the system |
+| Admin | Review all courses and moderate availability; user/role management remains outside the implemented API |
 
-Future authorization must enforce these capabilities on the server, including ownership checks. Hiding a UI action is not authorization.
+Authorization enforces implemented capabilities on the server, including ownership checks. Hiding a UI action is not authorization.
 
 ## Phase 1 functional requirements
 
@@ -143,3 +143,5 @@ For Phase 2, require registration/login validation, JWT rejection cases, real Po
 For Phase 3, also require real PostgreSQL course/curriculum CRUD, ownership and admin checks, publication invariants, atomic reorder and rollback tests, foreign-key/unique/check-constraint tests, catalog visibility/filtering/pagination/counts, and public content-leakage checks. Preserve all earlier-phase tests. Apply the additive migration without resetting development data and confirm Alembic metadata matches the database.
 
 For Phase 4, require isolated PostgreSQL tests for enrollment/access/complete/incomplete, duplicate and concurrent requests, role/ownership restrictions, publication changes, rounding, curriculum changes, dashboard/statistics values, deletion safeguards, and database cross-course integrity. Preserve all earlier tests and development data. Verify migration, complete pytest suite, Ruff, live health/auth restrictions, and an independent final review.
+
+For Phase 5B, require instructor course and curriculum CRUD, changed-field PATCH semantics, full-set atomic reorder requests, confirmed publishing/deletion and server-conflict feedback. Preserve unsaved input across refetch errors and warn before navigation/sign-out. Require role-protected instructor/admin dashboards with real course counts, paginated per-course learner statistics, and no per-course statistics fan-out on overview pages. No global instructor enrollment aggregate is claimed without backend support. Verify frontend checks/build, unit regressions and real-API instructor → student → admin browser workflows on an isolated database, plus both themes and narrow layouts. Backend/authentication security remains unchanged.

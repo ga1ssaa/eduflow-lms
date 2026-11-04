@@ -1,6 +1,13 @@
 import { client } from './client';
+import {
+  buildCoursePatch,
+  buildLessonPatch,
+  buildModulePatch,
+} from './authoring';
+import type { CoursePatch, LessonPatch, ModulePatch } from './authoring';
 import type {
   CompletionRead,
+  CourseCreate,
   CoursePage,
   CourseProgress,
   CourseRead,
@@ -8,7 +15,12 @@ import type {
   EnrolledCoursePage,
   EnrollmentRead,
   InstructorStudentPage,
+  LessonCreate,
+  LessonRead,
   Level,
+  ModuleCreate,
+  ModuleRead,
+  OrderUpdate,
   PublicCourseDetail,
   PublicCoursePage,
   Status,
@@ -101,6 +113,56 @@ export const api = {
     client.request<CoursePage>(`/admin/courses${query(params)}`, { signal }),
   managementCourse: (courseId: string, admin = false, signal?: AbortSignal) =>
     client.request<CourseRead>(managementPath(courseId, admin), { signal }),
+  createCourse: (payload: CourseCreate) =>
+    client.request<CourseRead>('/instructor/courses', {
+      method: 'POST',
+      body: payload,
+    }),
+  updateCourse: (courseId: string, payload: CoursePatch) =>
+    client.request<CourseRead>(managementPath(courseId), {
+      method: 'PATCH',
+      body: buildCoursePatch({}, payload),
+    }),
+  deleteCourse: (courseId: string) =>
+    client.request<void>(managementPath(courseId), { method: 'DELETE' }),
+  createModule: (courseId: string, payload: ModuleCreate) =>
+    client.request<ModuleRead>(`${managementPath(courseId)}/modules`, {
+      method: 'POST',
+      body: payload,
+    }),
+  updateModule: (moduleId: string, payload: ModulePatch) =>
+    client.request<ModuleRead>(`/instructor/modules/${id(moduleId)}`, {
+      method: 'PATCH',
+      body: buildModulePatch({}, payload),
+    }),
+  deleteModule: (moduleId: string) =>
+    client.request<void>(`/instructor/modules/${id(moduleId)}`, {
+      method: 'DELETE',
+    }),
+  reorderModules: (courseId: string, payload: OrderUpdate) =>
+    client.request<ModuleRead[]>(`${managementPath(courseId)}/modules/order`, {
+      method: 'PUT',
+      body: { ids: payload.ids },
+    }),
+  createLesson: (moduleId: string, payload: LessonCreate) =>
+    client.request<LessonRead>(`/instructor/modules/${id(moduleId)}/lessons`, {
+      method: 'POST',
+      body: payload,
+    }),
+  updateLesson: (lessonId: string, payload: LessonPatch) =>
+    client.request<LessonRead>(`/instructor/lessons/${id(lessonId)}`, {
+      method: 'PATCH',
+      body: buildLessonPatch({}, payload),
+    }),
+  deleteLesson: (lessonId: string) =>
+    client.request<void>(`/instructor/lessons/${id(lessonId)}`, {
+      method: 'DELETE',
+    }),
+  reorderLessons: (moduleId: string, payload: OrderUpdate) =>
+    client.request<LessonRead[]>(
+      `/instructor/modules/${id(moduleId)}/lessons/order`,
+      { method: 'PUT', body: { ids: payload.ids } },
+    ),
   publishCourse: (courseId: string, admin = false) =>
     client.request<CourseRead>(`${managementPath(courseId, admin)}/publish`, {
       method: 'POST',

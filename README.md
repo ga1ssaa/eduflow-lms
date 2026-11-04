@@ -1,6 +1,6 @@
 # EduFlow LMS
 
-A backend-first learning management system built as a modular monolith. Phases 1–4 provide authentication, course management, enrollment and learning progress. Phase 5A adds the React application: public catalog, authentication, student learning, instructor course reviews/statistics, and admin publication moderation. Course authoring forms remain for Phase 5B.
+A backend-first learning management system built as a modular monolith. Phases 1–4 provide authentication, course management, enrollment and learning progress. Phases 5A–5B provide the React application: public catalog, authentication, student learning, instructor course/curriculum authoring and statistics, and admin publication moderation.
 
 ## Run the frontend
 
@@ -14,7 +14,13 @@ npm run dev
 
 Open <http://127.0.0.1:5173>. Vite proxies `/api` to `http://127.0.0.1:8000`, preserving the browser Origin for backend CSRF validation. Stay on the same hostname for cookies. No frontend environment file is required; optional overrides are in `frontend/.env.example`. If the API port changes, set `EDUFLOW_API_PROXY_TARGET` to its local URL. `VITE_*` settings are public browser configuration and must never contain secrets.
 
-The frontend uses the real API and shows empty states when no courses exist. Registration creates students only. Instructor/admin accounts must already have the appropriate backend role; there is no user-management endpoint or default account. Instructor views are read-only in this phase; admins can publish and unpublish valid courses.
+The frontend uses the real API and shows empty states when no courses exist. Registration creates students only. Instructor/admin accounts must already have the appropriate backend role; there is no user-management endpoint or default account.
+
+Instructors land on `/instructor`. Create courses at `/instructor/courses/new`, edit details at `/instructor/courses/:courseId/edit`, manage modules/lessons at `/instructor/courses/:courseId/curriculum`, and view learner progress at `/instructor/courses/:courseId/students`. Course overview pages provide confirmed publish/unpublish and draft deletion. Curriculum ordering uses explicit up/down controls and submits the complete current ID list. Slugs are editable but are not regenerated when a title changes. Text content is plain text; videos use external HTTP(S) links.
+
+Unsaved forms warn before page unload, route navigation, browser history navigation, and explicit sign-out. Inputs survive failed saves and background refetch failures. PATCH sends only changed fields; clearing a lesson video sends `null`. Publication and learning-record deletion restrictions remain server-enforced. Refresh after a 409 conflict and review the preserved inputs before retrying. Changing an existing slug changes its public course URL.
+
+Admins land on `/admin`, with actual total/published/draft counts, course search/filtering, full course review and confirmed publication moderation. No global user statistics or fake user-management controls exist. Dashboard course counts come from bounded paginated API queries. Enrollment/completion counts are shown per course: the API has no instructor-wide enrollment aggregate, so the dashboard does not issue a statistics request for every course or invent a global number. A student enrolled in two courses contributes one enrollment to each course's statistics.
 
 Access tokens stay in memory. Refresh cookies remain HttpOnly; auth POSTs include credentials and the CSRF marker. Session recovery serializes cookie operations, shares refreshes within a tab, and uses Web Locks where supported across tabs. Older browsers without Web Locks may reject a racing refresh safely and require sign-in again. Logout cancels private requests and clears cached data; failed server revocation offers a sign-out retry. Light/dark/system selection is the only persisted browser preference.
 
@@ -29,7 +35,7 @@ npm run build
 
 `npm run preview` serves the built app on port 4173. Authentication on that port requires adding its exact origin to the backend allowlist; the normal development workflow uses port 5173. A future production host must serve SPA routes with an `index.html` fallback, proxy `/api/v1` to the API, and use HTTPS with Secure refresh cookies and explicit trusted origins. Nothing is deployed by these commands.
 
-Optional real-API browser tests use `npm run test:e2e` after `npx playwright install chromium`. They require Vite on port 5173 pointed at a separate API using an isolated `eduflow_test_*` PostgreSQL database. Set `EDUFLOW_E2E_FIXTURE_FILE` to a private JSON file containing `student`, `instructor`, and `admin` accounts (`email`, `password`) plus `course` and `draft` (`id`, `slug`, `title`). The student full name must be `Frontend Student`. The published course needs two ordered text lessons containing `Private lesson 1.` and `Private lesson 2.` respectively; the draft must satisfy publication rules. Keep this file outside Git with mode 0600; never use development or production accounts. Tests enroll the fixture student and change completion/publication state; they do not reset databases. Without fixtures they explicitly skip. Browser traces/video are disabled to avoid capturing token responses.
+Optional real-API browser tests use `npm run test:e2e` after `npx playwright install chromium`. They require Vite on port 5173 pointed at a separate API using an isolated `eduflow_test_*` PostgreSQL database. Set `EDUFLOW_E2E_FIXTURE_FILE` to a private JSON file containing `student`, `instructor`, and `admin` accounts (`email`, `password`) plus `course` and `draft` (`id`, `slug`, `title`). The student full name must be `Frontend Student`. The published course needs two ordered text lessons containing `Private lesson 1.` and `Private lesson 2.` respectively; the draft must satisfy publication rules. Keep this file outside Git with mode 0600; never use development or production accounts. The authoring test creates unique courses through the UI, reorders modules/lessons, verifies student learning and statistics, and confirms moderation/deletion safeguards. Tests create and modify isolated records but never reset databases. Without fixtures they explicitly skip. Browser traces/video are disabled to avoid capturing token responses.
 
 ## Run with Docker
 

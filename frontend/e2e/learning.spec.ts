@@ -148,14 +148,29 @@ test('instructor statistics and admin moderation respect role workspaces', async
     await page.getByRole('button', { name: 'Unpublish course' }).isVisible()
   ) {
     await page.getByRole('button', { name: 'Unpublish course' }).click();
+    await page
+      .getByRole('dialog', { name: 'Unpublish course', exact: true })
+      .getByRole('button', { name: 'Unpublish course', exact: true })
+      .click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
   }
   await page
     .getByRole('button', { name: 'Publish course', exact: true })
     .click();
+  await page
+    .getByRole('dialog', { name: 'Publish course', exact: true })
+    .getByRole('button', { name: 'Publish course', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Unpublish course' }),
   ).toBeVisible();
   await page.getByRole('button', { name: 'Unpublish course' }).click();
+  await page
+    .getByRole('dialog', { name: 'Unpublish course', exact: true })
+    .getByRole('button', { name: 'Unpublish course', exact: true })
+    .click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(
     page.getByRole('button', { name: 'Publish course', exact: true }),
   ).toBeVisible();

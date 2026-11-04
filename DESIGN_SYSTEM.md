@@ -2,7 +2,7 @@
 
 ## Status and direction
 
-This is the visual contract for the EduFlow frontend. Phase 5A implements the catalog, authentication, student learning, instructor review, and admin moderation screens.
+This is the visual contract for the EduFlow frontend. Phases 5A–5B implement the catalog, authentication, student learning, instructor authoring/review, and admin moderation screens.
 
 Build a clear, professional SaaS interface for learning and course management. Prioritize readable content, predictable navigation, compact controls, and visible progress. Use restrained decoration; avoid excessive gradients, glow, oversized cards, and charts populated with invented data.
 

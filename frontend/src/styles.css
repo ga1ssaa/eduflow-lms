@@ -1323,3 +1323,31 @@ tbody tr:last-child > * {
     transition: none !important;
   }
 }
+
+/* Course workspaces retain the shared theme and control styles. */
+.workspace-create {
+  margin-bottom: 24px;
+}
+.course-actions {
+  margin: 24px 0 16px;
+}
+.overview-note {
+  color: var(--subtle);
+  margin: 0 0 32px;
+  line-height: 1.7;
+}
+.danger-button {
+  color: var(--error);
+}
+.course-row > .actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+@media (max-width: 540px) {
+  .course-row > .actions {
+    justify-content: flex-start;
+  }
+  .course-actions > .button {
+    flex: 1 1 100%;
+  }
+}

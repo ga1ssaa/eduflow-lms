@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
+import { CourseActions } from '../components/CourseActions';
 import type { Status } from '../lib/types';
 import {
   Badge,
@@ -14,7 +15,13 @@ import {
   usePage,
 } from '../components/ui';
 import type { FormEvent } from 'react';
-export function WorkspacePage({ admin = false }: { admin?: boolean }) {
+export function WorkspacePage({
+  admin = false,
+  dashboard = false,
+}: {
+  admin?: boolean;
+  dashboard?: boolean;
+}) {
   const { user } = useAuth();
   const { params, page, setPage, setParams } = usePage();
   const status = ['draft', 'published'].includes(params.get('status') ?? '')
@@ -45,16 +52,25 @@ export function WorkspacePage({ admin = false }: { admin?: boolean }) {
   };
   return (
     <>
-      <PageHeading
-        eyebrow={admin ? 'ADMINISTRATION' : 'INSTRUCTOR WORKSPACE'}
-        title={admin ? 'Course moderation' : 'Your courses'}
-      >
-        <p>
-          {admin
-            ? 'Review course content and manage publication across EduFlow.'
-            : 'Review your curriculum and understand your learners’ progress.'}
-        </p>
-      </PageHeading>
+      {!dashboard && (
+        <PageHeading
+          eyebrow={admin ? 'ADMINISTRATION' : 'INSTRUCTOR WORKSPACE'}
+          title={admin ? 'Course moderation' : 'Your courses'}
+        >
+          <p>
+            {admin
+              ? 'Review course content and manage publication across EduFlow.'
+              : 'Review your curriculum and understand your learners’ progress.'}
+          </p>
+        </PageHeading>
+      )}
+      {!admin && (
+        <div className="actions workspace-create">
+          <Link className="button primary" to="/instructor/courses/new">
+            Create course
+          </Link>
+        </div>
+      )}
       <form className="filter-bar compact surface" onSubmit={filter}>
         {admin && (
           <label>
@@ -108,12 +124,20 @@ export function WorkspacePage({ admin = false }: { admin?: boolean }) {
                       {c.lesson_count} lessons
                     </p>
                   </div>
-                  <Link
-                    className="button secondary"
-                    to={`/${admin ? 'admin' : 'instructor'}/courses/${c.id}`}
-                  >
-                    Review course
-                  </Link>
+                  <div className="actions">
+                    <Link
+                      className="button secondary"
+                      to={`/instructor/courses/${c.id}/students`}
+                    >
+                      Student statistics
+                    </Link>
+                    <Link
+                      className="button secondary"
+                      to={`/${admin ? 'admin' : 'instructor'}/courses/${c.id}`}
+                    >
+                      Review course
+                    </Link>
+                  </div>
                 </article>
               ))}
             </div>
@@ -129,11 +153,16 @@ export function WorkspacePage({ admin = false }: { admin?: boolean }) {
     </>
   );
 }
-export function ManagementPage({ admin = false }: { admin?: boolean }) {
+export function ManagementPage({
+  admin = false,
+  studentsOnly = false,
+}: {
+  admin?: boolean;
+  studentsOnly?: boolean;
+}) {
   const { courseId = '' } = useParams();
   const { user } = useAuth();
   const { page, setPage } = usePage();
-  const client = useQueryClient();
   const base = admin ? 'admin' : 'author';
   const course = useQuery({
     queryKey: [base, user!.id, 'course', courseId],
@@ -149,21 +178,6 @@ export function ManagementPage({ admin = false }: { admin?: boolean }) {
     queryFn: ({ signal }) =>
       api.courseStudents(courseId, { page, page_size: 20 }, signal),
     enabled: course.isSuccess,
-  });
-  const publish = useMutation({
-    mutationFn: (published: boolean) =>
-      published
-        ? api.unpublishCourse(courseId, admin)
-        : api.publishCourse(courseId, admin),
-    onSuccess: async () => {
-      await Promise.all([
-        client.invalidateQueries({ queryKey: ['admin'] }),
-        client.invalidateQueries({ queryKey: ['author'] }),
-        client.invalidateQueries({ queryKey: ['catalog'] }),
-        client.invalidateQueries({ queryKey: ['public-course'] }),
-        client.invalidateQueries({ queryKey: ['student'] }),
-      ]);
-    },
   });
   if (course.isPending) return <Loading label="Loading course review…" />;
   if (course.isError)
@@ -181,7 +195,7 @@ export function ManagementPage({ admin = false }: { admin?: boolean }) {
       </Link>
       <PageHeading
         eyebrow={admin ? 'COURSE MODERATION' : 'COURSE OVERVIEW'}
-        title={c.title}
+        title={studentsOnly ? `Student progress · ${c.title}` : c.title}
       >
         <p>{c.description || 'No description provided.'}</p>
       </PageHeading>
@@ -190,25 +204,20 @@ export function ManagementPage({ admin = false }: { admin?: boolean }) {
         <span>By {c.instructor_name}</span>
         <span>{c.category || 'No category'}</span>
         <span>{c.level}</span>
-        {admin && (
-          <button
-            className="button secondary"
-            disabled={publish.isPending}
-            onClick={() => publish.mutate(c.status === 'published')}
-          >
-            {publish.isPending
-              ? 'Updating publication…'
-              : c.status === 'published'
-                ? 'Unpublish course'
-                : 'Publish course'}
-          </button>
-        )}
       </div>
-      {publish.isError && <ErrorPanel error={publish.error} />}
-      {publish.isSuccess && (
-        <p role="status" className="success-message">
-          Publication status updated.
-        </p>
+      {!studentsOnly && <CourseActions course={c} admin={admin} />}
+      {studentsOnly && (
+        <div className="actions">
+          <Link className="button secondary" to={`/instructor/courses/${c.id}`}>
+            Course overview
+          </Link>
+          <Link
+            className="button secondary"
+            to={`/instructor/courses/${c.id}/curriculum`}
+          >
+            Edit curriculum
+          </Link>
+        </div>
       )}
       {stats.isPending ? (
         <Loading label="Loading course statistics…" />
@@ -230,41 +239,43 @@ export function ManagementPage({ admin = false }: { admin?: boolean }) {
           </div>
         </div>
       )}
-      <section className="curriculum surface">
-        <h2>Curriculum preview</h2>
-        {c.modules.length === 0 ? (
-          <p>No modules have been added.</p>
-        ) : (
-          c.modules.map((m) => (
-            <details key={m.id}>
-              <summary>
-                {m.position}. {m.title}
-                <span>{m.lessons.length} lessons</span>
-              </summary>
-              {m.lessons.map((l) => (
-                <article className="preview-lesson" key={l.id}>
-                  <h3>
-                    {l.position}. {l.title}
-                  </h3>
-                  <p className="lesson-text">
-                    {l.content || 'No text content.'}
-                  </p>
-                  {safeVideo(l.video_url) && (
-                    <a
-                      className="text-link"
-                      href={safeVideo(l.video_url)!}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open video (new tab)
-                    </a>
-                  )}
-                </article>
-              ))}
-            </details>
-          ))
-        )}
-      </section>
+      {!studentsOnly && (
+        <section className="curriculum surface">
+          <h2>Curriculum preview</h2>
+          {c.modules.length === 0 ? (
+            <p>No modules have been added.</p>
+          ) : (
+            c.modules.map((m) => (
+              <details key={m.id}>
+                <summary>
+                  {m.position}. {m.title}
+                  <span>{m.lessons.length} lessons</span>
+                </summary>
+                {m.lessons.map((l) => (
+                  <article className="preview-lesson" key={l.id}>
+                    <h3>
+                      {l.position}. {l.title}
+                    </h3>
+                    <p className="lesson-text">
+                      {l.content || 'No text content.'}
+                    </p>
+                    {safeVideo(l.video_url) && (
+                      <a
+                        className="text-link"
+                        href={safeVideo(l.video_url)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Open video (new tab)
+                      </a>
+                    )}
+                  </article>
+                ))}
+              </details>
+            ))
+          )}
+        </section>
+      )}
       <div className="section-heading">
         <h2>Enrolled learners</h2>
       </div>
@@ -293,6 +304,7 @@ export function ManagementPage({ admin = false }: { admin?: boolean }) {
                     <th scope="col">Enrolled</th>
                     <th scope="col">Lessons complete</th>
                     <th scope="col">Progress</th>
+                    <th scope="col">Status</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -309,6 +321,7 @@ export function ManagementPage({ admin = false }: { admin?: boolean }) {
                           <span className="sr-only"> Complete</span>
                         )}
                       </td>
+                      <td>{s.is_completed ? 'Completed' : 'In progress'}</td>
                     </tr>
                   ))}
                 </tbody>

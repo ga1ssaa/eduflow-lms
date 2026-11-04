@@ -16,6 +16,13 @@ import { CatalogPage, CoursePage } from './pages/Catalog';
 import { AuthPage } from './pages/Auth';
 import { LearningPage, LessonPage } from './pages/Learning';
 import { WorkspacePage, ManagementPage } from './pages/Workspace';
+import { OverviewPage } from './pages/Overview';
+import { CourseEditorPage } from './pages/CourseEditor';
+import { CurriculumPage } from './pages/Curriculum';
+import {
+  discardAuthoringChanges,
+  getAuthoringDirty,
+} from './components/authoring';
 import './styles.css';
 
 function Protected({
@@ -57,8 +64,8 @@ function Protected({
             auth.user.role === 'student'
               ? '/learning'
               : auth.user.role === 'admin'
-                ? '/admin/courses'
-                : '/instructor/courses'
+                ? '/admin'
+                : '/instructor'
           }
         >
           Go to my workspace
@@ -82,6 +89,9 @@ function Shell() {
       '/register': 'Create account',
       '/instructor/courses': 'My courses',
       '/admin/courses': 'Course moderation',
+      '/instructor': 'Instructor dashboard',
+      '/admin': 'Admin dashboard',
+      '/instructor/courses/new': 'Create course',
     };
     document.title = `${titles[location.pathname] ?? (location.pathname.startsWith('/learn/') ? 'Classroom' : 'Course')} · EduFlow`;
   }, [location.pathname]);
@@ -101,18 +111,27 @@ function Shell() {
         </NavLink>
       )}
       {auth.user && ['instructor', 'admin'].includes(auth.user.role) && (
-        <NavLink to="/instructor/courses" onClick={close}>
-          My courses
-        </NavLink>
+        <>
+          <NavLink to="/instructor" end onClick={close}>
+            Overview
+          </NavLink>
+          <NavLink to="/instructor/courses" onClick={close}>
+            My courses
+          </NavLink>
+        </>
       )}
       {auth.user?.role === 'admin' && (
-        <NavLink to="/admin/courses" onClick={close}>
+        <NavLink to="/admin" onClick={close}>
           Administration
         </NavLink>
       )}
     </>
   );
   const logout = async () => {
+    if (getAuthoringDirty()) {
+      if (!window.confirm('Sign out and discard your unsaved changes?')) return;
+      discardAuthoringChanges();
+    }
     setLoggingOut(true);
     setLogoutError(null);
     try {
@@ -245,6 +264,54 @@ function Shell() {
             element={
               <Protected roles={['student']}>
                 <LessonPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/instructor"
+            element={
+              <Protected roles={['instructor', 'admin']}>
+                <OverviewPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/instructor/courses/new"
+            element={
+              <Protected roles={['instructor', 'admin']}>
+                <CourseEditorPage create />
+              </Protected>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/edit"
+            element={
+              <Protected roles={['instructor', 'admin']}>
+                <CourseEditorPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/curriculum"
+            element={
+              <Protected roles={['instructor', 'admin']}>
+                <CurriculumPage />
+              </Protected>
+            }
+          />
+          <Route
+            path="/instructor/courses/:courseId/students"
+            element={
+              <Protected roles={['instructor', 'admin']}>
+                <ManagementPage studentsOnly />
+              </Protected>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <Protected roles={['admin']}>
+                <OverviewPage admin />
               </Protected>
             }
           />
