@@ -1,8 +1,9 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { CatalogCourseCard } from '../components/catalog/CatalogVisuals';
 import type { PublicCourseSummary } from '../lib/types';
+import { useScrollReveal } from '../hooks/useScrollReveal';
 
 const course: PublicCourseSummary = {
   id: '40000000-0000-4000-8000-000000000001',
@@ -17,9 +18,17 @@ const course: PublicCourseSummary = {
   published_at: '2026-11-04T00:00:00Z',
 };
 function showCard() {
+  function SharedRevealPage() {
+    const root = useScrollReveal('catalog-card');
+    return (
+      <main ref={root}>
+        <CatalogCourseCard course={course} index={0} />
+      </main>
+    );
+  }
   return render(
     <MemoryRouter>
-      <CatalogCourseCard course={course} index={0} />
+      <SharedRevealPage />
     </MemoryRouter>,
   );
 }
@@ -32,14 +41,21 @@ describe('catalog card visibility and motion', () => {
     expect(
       screen.getByRole('link', { name: 'Visible learning' }),
     ).toHaveAttribute('href', '/courses/visible-course');
-    expect(screen.getByRole('article')).not.toHaveClass('catalog-card-reveal');
+    expect(screen.getByRole('article')).toHaveAttribute(
+      'data-reveal-state',
+      'revealed',
+    );
   });
 
   it('does not create a reveal observer when reduced motion is preferred', () => {
     const constructor = vi.fn();
     vi.stubGlobal(
       'matchMedia',
-      vi.fn(() => ({ matches: true })),
+      vi.fn(() => ({
+        matches: true,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
     );
     vi.stubGlobal(
       'IntersectionObserver',
@@ -52,12 +68,16 @@ describe('catalog card visibility and motion', () => {
     showCard();
     expect(constructor).not.toHaveBeenCalled();
     expect(screen.getByRole('article')).toBeVisible();
-    expect(screen.getByRole('article')).not.toHaveClass('catalog-card-reveal');
+    expect(screen.getByRole('article')).toHaveAttribute(
+      'data-reveal-state',
+      'revealed',
+    );
   });
 
-  it('leaves content visible before entry and disconnects the observer after revealing it', () => {
+  it('uses the shared observed-to-revealed lifecycle and unobserves after entering', () => {
     let notify: IntersectionObserverCallback | undefined;
     const disconnect = vi.fn();
+    const unobserve = vi.fn();
     vi.stubGlobal(
       'IntersectionObserver',
       class {
@@ -65,19 +85,42 @@ describe('catalog card visibility and motion', () => {
           notify = callback;
         }
         observe = vi.fn();
+        unobserve = unobserve;
         disconnect = disconnect;
       },
     );
-    showCard();
+    const view = showCard();
     expect(screen.getByRole('article')).toBeVisible();
-    expect(screen.getByRole('article')).not.toHaveClass('catalog-card-reveal');
+    expect(screen.getByRole('article')).toHaveAttribute(
+      'data-reveal-state',
+      'observed',
+    );
     act(() => {
       notify?.(
-        [{ isIntersecting: true } as IntersectionObserverEntry],
+        [
+          {
+            isIntersecting: true,
+            target: screen.getByRole('article'),
+          } as unknown as IntersectionObserverEntry,
+        ],
         {} as IntersectionObserver,
       );
     });
-    expect(screen.getByRole('article')).toHaveClass('catalog-card-reveal');
+    expect(screen.getByRole('article')).toHaveAttribute(
+      'data-reveal-state',
+      'revealing',
+    );
+    expect(unobserve).toHaveBeenCalledWith(screen.getByRole('article'));
+    const event = new Event('animationend', { bubbles: true });
+    Object.defineProperty(event, 'animationName', {
+      value: 'scroll-reveal-enter',
+    });
+    fireEvent(screen.getByRole('article'), event);
+    expect(screen.getByRole('article')).toHaveAttribute(
+      'data-reveal-state',
+      'revealed',
+    );
+    view.unmount();
     expect(disconnect).toHaveBeenCalledOnce();
   });
 });

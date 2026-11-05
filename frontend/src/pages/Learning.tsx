@@ -1,9 +1,13 @@
+import '../pages.css';
+import '../learning.css';
+import { Atmosphere } from '../components/Atmosphere';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ArrowRight,
   BookOpen,
+  Layers3,
   Check,
   CheckCircle2,
   ExternalLink,
@@ -36,13 +40,31 @@ export function LearningPage() {
       api.studentCourses({ page, page_size: 12 }, signal),
   });
   return (
-    <>
-      <PageHeading
-        eyebrow="MY LEARNING"
-        title={`Keep moving forward, ${user!.full_name.split(' ')[0]}.`}
-      >
-        <p>Every lesson is a step toward something new.</p>
-      </PageHeading>
+    <div className="learning-page">
+      <section className="learning-hero" data-reveal>
+        <Atmosphere />
+        <div className="learning-hero-copy">
+          <PageHeading
+            eyebrow="MY LEARNING"
+            title={`Keep moving forward, ${user!.full_name.split(' ')[0]}.`}
+          >
+            <p>Every lesson is a step toward something new.</p>
+          </PageHeading>
+          <Link className="button learning-hero-action" to="/courses">
+            Find a course
+            <ArrowRight size={17} aria-hidden="true" />
+          </Link>
+        </div>
+        <div className="learning-hero-art" aria-hidden="true">
+          <span className="learning-art-orbit" />
+          <span className="learning-art-sheet sheet-back" />
+          <span className="learning-art-sheet sheet-front" />
+          <div className="learning-art-book">
+            <BookOpen size={86} strokeWidth={1} />
+          </div>
+          <span className="learning-art-square" />
+        </div>
+      </section>
       {dashboard.isPending ? (
         <Loading label="Loading your overview…" />
       ) : dashboard.isError ? (
@@ -51,108 +73,168 @@ export function LearningPage() {
           retry={() => void dashboard.refetch()}
         />
       ) : (
-        <div className="stats-grid">
-          <div className="stat surface">
-            <span>Enrolled courses</span>
+        <div
+          className="stats-grid learning-summary"
+          aria-label="Your learning overview"
+        >
+          <div
+            className="stat surface learning-stat"
+            data-reveal
+            data-reveal-index={0}
+          >
+            <div className="learning-stat-top">
+              <span>Enrolled courses</span>
+              <BookOpen className="stat-symbol" size={22} aria-hidden="true" />
+            </div>
             <strong>{dashboard.data.total_enrolled_courses}</strong>
           </div>
-          <div className="stat surface">
-            <span>In progress</span>
+          <div
+            className="stat surface learning-stat"
+            data-reveal
+            data-reveal-index={1}
+          >
+            <div className="learning-stat-top">
+              <span>In progress</span>
+              <Layers3 className="stat-symbol" size={22} aria-hidden="true" />
+            </div>
             <strong>{dashboard.data.in_progress_courses}</strong>
           </div>
-          <div className="stat surface">
-            <span>Completed</span>
+          <div
+            className="stat surface learning-stat"
+            data-reveal
+            data-reveal-index={2}
+          >
+            <div className="learning-stat-top">
+              <span>Completed</span>
+              <CheckCircle2
+                className="stat-symbol"
+                size={22}
+                aria-hidden="true"
+              />
+            </div>
             <strong>{dashboard.data.completed_courses}</strong>
           </div>
         </div>
       )}
-      <div className="section-heading">
-        <h2>Your courses</h2>
-        <Link className="text-link" to="/courses">
-          Explore catalog <ArrowRight size={16} aria-hidden="true" />
-        </Link>
-      </div>
-      {courses.isPending ? (
-        <Loading label="Loading your courses…" />
-      ) : courses.isError ? (
-        <ErrorPanel
-          error={courses.error}
-          retry={() => void courses.refetch()}
-        />
-      ) : (
-        <>
-          {courses.data.items.length === 0 ? (
-            <Empty
-              title={
-                page === 1
-                  ? 'Your learning journey starts here'
-                  : 'No courses on this page'
-              }
-            >
-              <p>
-                {page === 1
-                  ? 'Explore the catalog and enroll in a course that interests you.'
-                  : 'Go back to see your enrolled courses.'}
-              </p>
-              <Link className="button primary" to="/courses">
-                Browse courses
-              </Link>
-            </Empty>
-          ) : (
-            <div className="course-grid">
-              {courses.data.items.map((c) => (
-                <article className="course-card surface" key={c.enrollment_id}>
-                  <div className="course-card-top">
-                    <span className="course-icon">
-                      <BookOpen aria-hidden="true" />
-                    </span>
-                    <Badge success={c.is_completed}>
-                      {c.is_available
-                        ? c.is_completed
-                          ? 'Completed'
-                          : 'In progress'
-                        : 'Unavailable'}
-                    </Badge>
-                  </div>
-                  <p className="category-label">{c.category || 'Course'}</p>
-                  <h3>{c.title}</h3>
-                  <p className="instructor">By {c.instructor_name}</p>
-                  <Progress
-                    completed={c.completed_lessons}
-                    total={c.total_lessons}
-                    percent={c.progress_percentage}
-                    done={c.is_completed}
-                  />
-                  <div className="learning-card-bottom">
-                    {c.is_available ? (
-                      <Link
-                        className="button secondary full-width"
-                        to={`/learn/${c.course_id}`}
-                      >
-                        {c.is_completed ? 'Review course' : 'Continue learning'}
-                        <ArrowRight size={16} aria-hidden="true" />
-                      </Link>
-                    ) : (
-                      <p className="small unavailable">
-                        <LockKeyhole size={16} aria-hidden="true" />
-                        This course is currently unavailable. Your progress is
-                        saved.
-                      </p>
-                    )}
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-          <Pagination
-            page={page}
-            total={courses.data.total}
-            size={courses.data.page_size}
-            onChange={setPage}
+      <section
+        className="learning-library"
+        aria-labelledby="learning-library-heading"
+      >
+        <div className="section-heading learning-library-heading">
+          <div>
+            <p className="learning-section-kicker">YOUR PERSONAL LIBRARY</p>
+            <h2 id="learning-library-heading">Your courses</h2>
+          </div>
+          <Link className="text-link" to="/courses">
+            Explore catalog <ArrowRight size={16} aria-hidden="true" />
+          </Link>
+        </div>
+        {courses.isPending ? (
+          <Loading label="Loading your courses…" />
+        ) : courses.isError ? (
+          <ErrorPanel
+            error={courses.error}
+            retry={() => void courses.refetch()}
           />
-        </>
-      )}
-    </>
+        ) : (
+          <>
+            {courses.data.items.length === 0 ? (
+              <div className="learning-empty-state" data-reveal>
+                <div className="learning-empty-art" aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                  <BookOpen size={48} strokeWidth={1} />
+                  <i />
+                </div>
+                <Empty
+                  title={
+                    page === 1
+                      ? 'Your learning journey starts here'
+                      : 'No courses on this page'
+                  }
+                >
+                  <p>
+                    {page === 1
+                      ? 'Explore the catalog and enroll in a course that interests you.'
+                      : 'Go back to see your enrolled courses.'}
+                  </p>
+                  <Link className="button primary" to="/courses">
+                    Browse courses
+                  </Link>
+                </Empty>
+              </div>
+            ) : (
+              <div className="course-grid">
+                {courses.data.items.map((c, index) => (
+                  <article
+                    className="course-card surface learning-course-card"
+                    key={c.enrollment_id}
+                    data-reveal
+                    data-reveal-index={index}
+                  >
+                    <div className="learning-course-cover" data-level={c.level}>
+                      <span>{c.level}</span>
+                      <div aria-hidden="true">
+                        <i />
+                        <i />
+                        <BookOpen size={40} strokeWidth={1} />
+                      </div>
+                    </div>
+                    <div className="course-card-top">
+                      <span className="course-icon">
+                        <BookOpen aria-hidden="true" />
+                      </span>
+                      <Badge success={c.is_completed}>
+                        {c.is_available
+                          ? c.is_completed
+                            ? 'Completed'
+                            : 'In progress'
+                          : 'Unavailable'}
+                      </Badge>
+                    </div>
+                    <p className="category-label">{c.category || 'Course'}</p>
+                    <h3>{c.title}</h3>
+                    <p className="instructor">By {c.instructor_name}</p>
+                    <Progress
+                      completed={c.completed_lessons}
+                      total={c.total_lessons}
+                      percent={c.progress_percentage}
+                      done={c.is_completed}
+                    />
+                    <div className="learning-card-bottom">
+                      {c.is_available ? (
+                        <Link
+                          className="button secondary full-width"
+                          to={`/learn/${c.course_id}`}
+                        >
+                          {c.is_completed
+                            ? 'Review course'
+                            : 'Continue learning'}
+                          <ArrowRight size={16} aria-hidden="true" />
+                        </Link>
+                      ) : (
+                        <p className="small unavailable">
+                          <LockKeyhole size={16} aria-hidden="true" />
+                          This course is currently unavailable. Your progress is
+                          saved.
+                        </p>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            )}
+            <Pagination
+              page={page}
+              total={courses.data.total}
+              size={courses.data.page_size}
+              onChange={setPage}
+            />
+          </>
+        )}
+      </section>
+    </div>
   );
 }
 export function LessonPage() {
@@ -212,7 +294,7 @@ export function LessonPage() {
       <Link to="/learning" className="back-link">
         ← My learning
       </Link>
-      <div className="lesson-heading">
+      <div className="lesson-heading product-player-intro">
         <div>
           <p className="eyebrow">YOUR CLASSROOM</p>
           <h1>{c.title}</h1>
@@ -223,6 +305,7 @@ export function LessonPage() {
       </div>
       <div className="player-layout">
         <aside className="lesson-sidebar surface">
+          <p className="player-sidebar-kicker">YOUR LEARNING PATH</p>
           <h2>Course content</h2>
           <Progress
             completed={c.completed_lessons}

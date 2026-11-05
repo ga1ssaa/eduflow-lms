@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
+import { chooseTheme } from './theme';
 
 // Supply a private fixture file for a disposable eduflow_test_* database.
 // Never record traces: authentication network responses contain access tokens.
@@ -105,7 +106,9 @@ test('catalog, cookie authentication, enrollment and completion use the real API
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   expect((await logout).status()).toBe(204);
   await expect(
-    page.getByRole('link', { name: 'Sign in', exact: true }),
+    page
+      .getByRole('banner')
+      .getByRole('link', { name: 'Sign in', exact: true }),
   ).toBeVisible();
   expect(
     (await context.cookies()).some((c) => c.name === 'eduflow_refresh'),
@@ -124,7 +127,9 @@ test('instructor statistics and admin moderation respect role workspaces', async
   await page.getByLabel('Account menu').click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(
-    page.getByRole('link', { name: 'Sign in', exact: true }),
+    page
+      .getByRole('banner')
+      .getByRole('link', { name: 'Sign in', exact: true }),
   ).toBeVisible();
   await login(page, f.instructor);
   await page.goto(`/instructor/courses/${f.course.id}`);
@@ -137,7 +142,9 @@ test('instructor statistics and admin moderation respect role workspaces', async
   await page.getByLabel('Account menu').click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(
-    page.getByRole('link', { name: 'Sign in', exact: true }),
+    page
+      .getByRole('banner')
+      .getByRole('link', { name: 'Sign in', exact: true }),
   ).toBeVisible();
   await login(page, f.admin);
   await page.goto(`/admin/courses/${f.draft.id}`);
@@ -179,13 +186,13 @@ test('instructor statistics and admin moderation respect role workspaces', async
 test('light, dark and mobile layouts remain usable', async ({ page }) => {
   await page.goto('/courses');
   await expect(page.locator('.catalog-course-card').first()).toBeVisible();
-  await page.getByLabel('Color theme').selectOption('light');
+  await chooseTheme(page, 'light');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
   await page.screenshot({
     path: 'test-results/catalog-light.png',
     fullPage: true,
   });
-  await page.getByLabel('Color theme').selectOption('dark');
+  await chooseTheme(page, 'dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await page.screenshot({
     path: 'test-results/catalog-dark.png',

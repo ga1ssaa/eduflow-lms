@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   ArrowDown,
   BookOpen,
+  ChevronDown,
   Search,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -86,7 +87,7 @@ export function CatalogPage() {
         className="catalog-listing"
         aria-labelledby="catalog-heading"
       >
-        <div className="catalog-results-heading">
+        <div className="catalog-results-heading" data-reveal>
           <div>
             <p className="catalog-kicker">FIND YOUR NEXT CHAPTER</p>
             <h2 id="catalog-heading">Curiosity looks good on you.</h2>
@@ -270,8 +271,8 @@ export function CoursePage() {
       <Link className="back-link" to="/courses">
         ← Back to catalog
       </Link>
-      <div className="course-detail-layout">
-        <section>
+      <header className="course-detail-hero">
+        <div>
           <PageHeading eyebrow={c.category || 'COURSE'} title={c.title}>
             <p>{c.description || 'Review the curriculum below.'}</p>
           </PageHeading>
@@ -281,35 +282,50 @@ export function CoursePage() {
             <span>{c.module_count} modules</span>
             <span>{c.lesson_count} lessons</span>
           </div>
-          <section className="curriculum surface">
-            <h2>What you’ll learn</h2>
-            {c.modules.length ? (
-              c.modules.map((module) => (
-                <details key={module.id} open>
-                  <summary>
-                    {module.position}. {module.title}
-                    <span>{module.lessons.length} lessons</span>
-                  </summary>
-                  <ol>
-                    {module.lessons.map((lesson) => (
-                      <li key={lesson.id}>
-                        <BookOpen size={16} aria-hidden="true" />
-                        <span>{lesson.title}</span>
-                      </li>
-                    ))}
-                  </ol>
-                </details>
-              ))
-            ) : (
-              <p>The curriculum is currently unavailable.</p>
-            )}
-          </section>
+        </div>
+        <div className="course-detail-art" aria-hidden="true">
+          <BookOpen size={88} strokeWidth={1} />
+        </div>
+      </header>
+      <div className="course-detail-layout">
+        <section
+          className="curriculum surface"
+          aria-labelledby="course-curriculum-title"
+        >
+          <h2 id="course-curriculum-title" data-reveal>
+            What you’ll learn
+          </h2>
+          {c.modules.length ? (
+            c.modules.map((module) => (
+              <details key={module.id} open>
+                <summary>
+                  {module.position}. {module.title}
+                  <span>{module.lessons.length} lessons</span>
+                  <ChevronDown
+                    className="curriculum-chevron"
+                    size={18}
+                    aria-hidden="true"
+                  />
+                </summary>
+                <ol>
+                  {module.lessons.map((lesson) => (
+                    <li key={lesson.id}>
+                      <BookOpen size={16} aria-hidden="true" />
+                      <span>{lesson.title}</span>
+                    </li>
+                  ))}
+                </ol>
+              </details>
+            ))
+          ) : (
+            <p>The curriculum is currently unavailable.</p>
+          )}
         </section>
         <aside className="enroll-card surface">
           <span className="course-icon large">
             <GraduationIcon />
           </span>
-          <h2>Your next step starts here</h2>
+          <h2 data-reveal>Your next step starts here</h2>
           <p>Enroll to access the lessons and keep track of your progress.</p>
           {auth.status === 'loading' ? (
             <Loading label="Checking your session…" />

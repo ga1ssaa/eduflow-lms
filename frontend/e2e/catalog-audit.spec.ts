@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { chooseTheme } from './theme';
 
 type Account = { email: string; password: string };
 const fixturePath = process.env.EDUFLOW_E2E_FIXTURE_FILE;
@@ -67,11 +68,11 @@ for (const width of [320, 375, 768, 1024, 1440]) {
     }) => {
       await page.setViewportSize({ width, height: 900 });
       await openCatalog(page);
-      const themeSelect = page.getByRole('combobox', {
+      const themeTrigger = page.getByRole('button', {
         name: 'Color theme',
         exact: true,
       });
-      await themeSelect.selectOption(theme);
+      await chooseTheme(page, theme);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       await page.evaluate(async () => {
         await document.fonts.ready;
@@ -95,7 +96,26 @@ for (const width of [320, 375, 768, 1024, 1440]) {
         expect(box!.x + box!.width).toBeLessThanOrEqual(width + 1);
       }
       const level = page.getByRole('combobox', { name: 'Level', exact: true });
-      await auditSelect(themeSelect);
+      const themeBox = await themeTrigger.boundingBox();
+      expect(themeBox!.width).toBeGreaterThanOrEqual(44);
+      expect(themeBox!.height).toBeGreaterThanOrEqual(44);
+      await expect(themeTrigger.locator('svg')).toHaveCount(1);
+      await themeTrigger.click();
+      const themeMenu = page.getByRole('menu', {
+        name: 'Color theme',
+        exact: true,
+      });
+      const menuBox = await themeMenu.boundingBox();
+      expect(menuBox!.x).toBeGreaterThanOrEqual(8);
+      expect(menuBox!.x + menuBox!.width).toBeLessThanOrEqual(width - 8);
+      await expect(
+        page.getByRole('menuitemradio', {
+          name: theme === 'light' ? 'Light' : 'Dark',
+          exact: true,
+        }),
+      ).toHaveAttribute('aria-checked', 'true');
+      await page.keyboard.press('Escape');
+      await expect(themeTrigger).toBeFocused();
       await auditSelect(level);
       await page.keyboard.press('Tab');
       await level.focus();
@@ -129,15 +149,16 @@ test('native select keyboard interaction and mobile navigation restore focus cor
   await page.keyboard.press('Enter');
   await page.keyboard.press('Tab');
   await expect(level).toHaveValue('beginner');
-  const theme = page.getByRole('combobox', {
+  const theme = page.getByRole('button', {
     name: 'Color theme',
     exact: true,
   });
   await theme.focus();
-  await page.keyboard.press('d');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Home');
+  await page.keyboard.press('ArrowDown');
   await page.keyboard.press('Enter');
-  await page.keyboard.press('Tab');
-  await expect(theme).toHaveValue('dark');
+  await expect(theme).toBeFocused();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await page.evaluate(() => localStorage.getItem('eduflow-theme'))).toBe(
     'dark',
@@ -227,7 +248,8 @@ test('catalog anchors, authentication CTAs and real course links resolve without
   ).toBeVisible();
   await openCatalog(page);
   await page.getByRole('link', { name: 'EduFlow home', exact: true }).click();
-  await expect(page).toHaveURL(/\/courses$/);
+  await expect(page).toHaveURL(/\/$/);
+  await openCatalog(page);
   await page
     .getByRole('link', { name: 'Your instructor workspace', exact: true })
     .click();
@@ -276,9 +298,7 @@ for (const [role, destination] of [
     for (const width of [320, 375, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       for (const theme of ['light', 'dark']) {
-        await page
-          .getByRole('combobox', { name: 'Color theme', exact: true })
-          .selectOption(theme);
+        await chooseTheme(page, theme);
         await accountMenu.focus();
         await page.keyboard.press('Enter');
         await expect(workspace).toBeVisible();

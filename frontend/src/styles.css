@@ -2,8 +2,11 @@
 @theme inline {
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-ink);
+  --color-primary-action: var(--primary-action);
+  --color-primary-action-foreground: var(--primary-action-foreground);
   --color-background: var(--bg);
   --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
   --color-foreground: var(--text);
   --color-muted-foreground: var(--muted);
   --color-border: var(--border);
@@ -30,8 +33,11 @@
   --primary-ink: #fff;
   --bg: #f6f8fc;
   --surface: #fff;
+  --surface-elevated: var(--surface);
   --accent: #fd91cc;
-  --accent-foreground: var(--text);
+  --accent-foreground: #02070a;
+  --primary-action: var(--accent);
+  --primary-action-foreground: var(--accent-foreground);
   --accent-subtle: color-mix(in srgb, var(--accent) 16%, var(--surface));
   --accent-subtle-foreground: var(--text);
   --accent-emphasis: color-mix(in srgb, var(--accent) 55%, var(--text));
@@ -56,7 +62,6 @@
   --bg: #02070a;
   --surface: #101a24;
   --accent: #fc734d;
-  --accent-foreground: var(--bg);
   --accent-subtle: color-mix(in srgb, var(--accent) 16%, var(--surface));
   --accent-subtle-foreground: var(--text);
   --accent-emphasis: var(--accent);
@@ -366,8 +371,9 @@ svg {
   filter: brightness(0.96);
 }
 .button.primary {
-  background: var(--primary);
-  color: var(--primary-ink);
+  background: var(--primary-action);
+  color: var(--primary-action-foreground);
+  border-color: var(--primary-action);
 }
 .button.secondary {
   background: var(--surface);

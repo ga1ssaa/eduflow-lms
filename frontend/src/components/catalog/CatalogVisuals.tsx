@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { CatalogAnchor } from './CatalogAnchor';
 import {
@@ -27,7 +27,7 @@ export function CatalogHero({
         ))}
       </div>
       <div className="catalog-hero-inner">
-        <div className="catalog-hero-copy">
+        <div className="catalog-hero-copy" data-reveal>
           <p className="catalog-kicker">
             <span />A little curiosity. A whole new direction.
           </p>
@@ -104,35 +104,12 @@ export function CatalogCourseCard({
   course: PublicCourseSummary;
   index: number;
 }) {
-  const card = useRef<HTMLElement>(null);
-  useEffect(() => {
-    const element = card.current;
-    if (
-      !element ||
-      typeof IntersectionObserver === 'undefined' ||
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    )
-      return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          element.classList.add('catalog-card-reveal');
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.12 },
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
   const variant = visualVariant(`${course.category}:${course.title}`);
   return (
     <article
-      ref={card}
       className={`catalog-course-card catalog-cover-${variant}`}
-      style={
-        { '--catalog-reveal-delay': `${(index % 3) * 70}ms` } as CSSProperties
-      }
+      data-reveal
+      data-reveal-index={index}
     >
       <div className="catalog-course-cover" aria-hidden="true">
         <span className="catalog-cover-word">
@@ -216,7 +193,7 @@ export function CatalogSections() {
         id="how-it-works"
         aria-labelledby="catalog-how-title"
       >
-        <div className="catalog-section-intro">
+        <div className="catalog-section-intro" data-reveal>
           <p className="catalog-section-kicker">A CLEAR PATH FORWARD</p>
           <h2 id="catalog-how-title">
             Less friction.
@@ -229,7 +206,7 @@ export function CatalogSections() {
           </p>
         </div>
         <ol className="catalog-steps">
-          <li>
+          <li data-reveal data-reveal-index={0}>
             <span className="catalog-step-number">01</span>
             <div>
               <h3>Find your starting point.</h3>
@@ -239,7 +216,7 @@ export function CatalogSections() {
               </p>
             </div>
           </li>
-          <li>
+          <li data-reveal data-reveal-index={1}>
             <span className="catalog-step-number">02</span>
             <div>
               <h3>Make space to learn.</h3>
@@ -249,7 +226,7 @@ export function CatalogSections() {
               </p>
             </div>
           </li>
-          <li>
+          <li data-reveal data-reveal-index={2}>
             <span className="catalog-step-number">03</span>
             <div>
               <h3>See yourself move forward.</h3>
@@ -262,6 +239,7 @@ export function CatalogSections() {
         </ol>
       </section>
       <section
+        data-reveal
         className="catalog-teach"
         id="for-instructors"
         aria-labelledby="catalog-teach-title"
@@ -296,6 +274,7 @@ export function CatalogSections() {
         </div>
       </section>
       <section
+        data-reveal
         className="catalog-about"
         id="about"
         aria-labelledby="catalog-about-title"

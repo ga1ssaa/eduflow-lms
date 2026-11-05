@@ -20,7 +20,7 @@ export function PageHeading({
   children?: ReactNode;
 }) {
   return (
-    <div className="page-heading">
+    <div className="page-heading" data-reveal>
       {eyebrow && <p className="eyebrow">{eyebrow}</p>}
       <h1>{title}</h1>
       {children && <div className="heading-description">{children}</div>}
@@ -94,7 +94,7 @@ export function Empty({
   children: ReactNode;
 }) {
   return (
-    <div className="empty">
+    <div className="empty" data-reveal>
       <BookOpen size={32} aria-hidden="true" />
       <h2>{title}</h2>
       <div>{children}</div>

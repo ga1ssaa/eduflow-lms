@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { test, expect, type Page, type Response } from '@playwright/test';
+import { chooseTheme } from './theme';
 
 const fixturePath = process.env.EDUFLOW_E2E_FIXTURE_FILE;
 const fixtures: {
@@ -25,8 +26,9 @@ function catalogResponse(response: Response, page: number, level?: string) {
 
 async function openCatalog(page: Page) {
   const fixture = fixtures!.catalog!;
-  const loaded = page.waitForResponse((response) =>
-    catalogResponse(response, 1),
+  const loaded = page.waitForResponse(
+    async (response) =>
+      catalogResponse(response, 1) && (await response.finished()) === null,
   );
   await page.goto(
     `/courses?${new URLSearchParams({ search: fixture.search, category: fixture.category })}`,
@@ -102,7 +104,7 @@ test('catalog supports both themes, responsive widths, compact navigation and ke
   for (const width of [1280, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const theme of ['light', 'dark']) {
-      await page.getByLabel('Color theme', { exact: true }).selectOption(theme);
+      await chooseTheme(page, theme);
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       expect(
         await page.evaluate(

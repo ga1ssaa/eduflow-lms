@@ -1,7 +1,10 @@
+import '../pages.css';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../lib/api';
+import { BookOpen, ChevronDown } from 'lucide-react';
+import { SelectControl } from '../components/SelectControl';
 import { CourseActions } from '../components/CourseActions';
 import type { Status } from '../lib/types';
 import {
@@ -64,7 +67,7 @@ export function WorkspacePage({
           </p>
         </PageHeading>
       )}
-      {!admin && (
+      {!admin && !dashboard && (
         <div className="actions workspace-create">
           <Link className="button primary" to="/instructor/courses/new">
             Create course
@@ -84,11 +87,11 @@ export function WorkspacePage({
         )}
         <label>
           <span>Publication status</span>
-          <select name="status" defaultValue={status ?? ''}>
+          <SelectControl name="status" defaultValue={status ?? ''}>
             <option value="">All statuses</option>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
-          </select>
+          </SelectControl>
         </label>
         <button className="button primary">Apply filters</button>
       </form>
@@ -107,10 +110,19 @@ export function WorkspacePage({
               </p>
             </Empty>
           ) : (
-            <div className="course-list surface">
-              {query.data.items.map((c) => (
-                <article className="course-row" key={c.id}>
-                  <div>
+            <div className="course-list workspace-course-grid">
+              {query.data.items.map((c, index) => (
+                <article
+                  className="course-row surface"
+                  key={c.id}
+                  data-reveal
+                  data-reveal-index={index}
+                >
+                  <div className="workspace-course-art" aria-hidden="true">
+                    <span>{c.category || 'Course'}</span>
+                    <BookOpen size={40} strokeWidth={1} />
+                  </div>
+                  <div className="workspace-course-copy">
                     <Badge success={c.status === 'published'}>{c.status}</Badge>
                     <h2>
                       <Link
@@ -119,6 +131,10 @@ export function WorkspacePage({
                         {c.title}
                       </Link>
                     </h2>
+                    <p className="workspace-course-description">
+                      {c.description ||
+                        'Add your course description when you are ready to shape the learning path.'}
+                    </p>
                     <p className="muted">
                       {c.instructor_name} · {c.module_count} modules ·{' '}
                       {c.lesson_count} lessons
@@ -225,15 +241,15 @@ export function ManagementPage({
         <ErrorPanel error={stats.error} retry={() => void stats.refetch()} />
       ) : (
         <div className="stats-grid">
-          <div className="stat surface">
+          <div className="stat surface" data-reveal data-reveal-index={0}>
             <span>Enrolled learners</span>
             <strong>{stats.data.total_students}</strong>
           </div>
-          <div className="stat surface">
+          <div className="stat surface" data-reveal data-reveal-index={1}>
             <span>Completed learners</span>
             <strong>{stats.data.completed_students}</strong>
           </div>
-          <div className="stat surface">
+          <div className="stat surface" data-reveal data-reveal-index={2}>
             <span>Average progress</span>
             <strong>{stats.data.average_progress_percentage}%</strong>
           </div>
@@ -241,7 +257,7 @@ export function ManagementPage({
       )}
       {!studentsOnly && (
         <section className="curriculum surface">
-          <h2>Curriculum preview</h2>
+          <h2 data-reveal>Curriculum preview</h2>
           {c.modules.length === 0 ? (
             <p>No modules have been added.</p>
           ) : (
@@ -250,6 +266,11 @@ export function ManagementPage({
                 <summary>
                   {m.position}. {m.title}
                   <span>{m.lessons.length} lessons</span>
+                  <ChevronDown
+                    className="curriculum-chevron"
+                    size={18}
+                    aria-hidden="true"
+                  />
                 </summary>
                 {m.lessons.map((l) => (
                   <article className="preview-lesson" key={l.id}>
@@ -276,8 +297,11 @@ export function ManagementPage({
           )}
         </section>
       )}
-      <div className="section-heading">
-        <h2>Enrolled learners</h2>
+      <div className="section-heading roster-heading" data-reveal>
+        <div>
+          <p className="eyebrow">LEARNER ACTIVITY</p>
+          <h2>Enrolled learners</h2>
+        </div>
       </div>
       {students.isPending ? (
         <Loading label="Loading learners…" />
@@ -293,7 +317,7 @@ export function ManagementPage({
               <p>Student enrollments will appear here.</p>
             </Empty>
           ) : (
-            <div className="roster surface">
+            <div className="roster surface product-roster">
               <table>
                 <caption className="sr-only">
                   Learner progress for {c.title}

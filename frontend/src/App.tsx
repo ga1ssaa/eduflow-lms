@@ -1,25 +1,13 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  Link,
-  NavLink,
-  Navigate,
-  Route,
-  Routes,
-  useLocation,
-} from 'react-router-dom';
-import {
-  ArrowUpRight,
-  BookOpen,
-  ChevronDown,
-  GraduationCap,
-  Menu,
-} from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { BookOpen } from 'lucide-react';
 import { useAuth } from './auth/AuthProvider';
 import type { Role } from './lib/types';
 import { ErrorPanel, Loading } from './components/ui';
-import { ThemeControl } from './theme/ThemeControl';
+import { Navbar } from './components/navigation/Navbar';
 import { CatalogAnchor } from './components/catalog/CatalogAnchor';
 import { CatalogPage, CoursePage } from './pages/Catalog';
+import { LandingPage } from './pages/Landing';
 import { AuthPage } from './pages/Auth';
 import { LearningPage, LessonPage } from './pages/Learning';
 import { WorkspacePage, ManagementPage } from './pages/Workspace';
@@ -31,6 +19,10 @@ import {
   getAuthoringDirty,
 } from './components/authoring';
 import './styles.css';
+import './product.css';
+import './atmosphere.css';
+import './reveal.css';
+import { useScrollReveal } from './hooks/useScrollReveal';
 
 function Protected({
   roles,
@@ -84,40 +76,36 @@ function Protected({
 function CatalogFrame({
   active,
   children,
+  pageClass,
 }: {
   active: boolean;
+  pageClass: string;
   children: ReactNode;
 }) {
   return active ? (
     <div className="catalog-shell">{children}</div>
   ) : (
-    <>{children}</>
+    <div className={pageClass}>{children}</div>
   );
 }
 function Shell() {
   const auth = useAuth();
   const location = useLocation();
+  const revealRef = useScrollReveal(location.pathname);
   const isCatalog = location.pathname === '/courses';
-  const [compact, setCompact] = useState(false);
+  const isLanding = location.pathname === '/';
+  const pageClass = `product-shell ${isLanding ? 'discovery-shell landing-shell' : ['/login', '/register'].includes(location.pathname) ? 'discovery-shell auth-shell' : location.pathname.startsWith('/courses/') ? 'discovery-shell course-detail-shell' : 'workspace-shell'}`;
   useEffect(() => {
-    if (!isCatalog || !location.hash) return;
+    if (!location.hash) return;
     const target = document.getElementById(location.hash.slice(1));
     target?.scrollIntoView({ block: 'start' });
     if (target?.id === 'main') target.focus({ preventScroll: true });
   }, [isCatalog, location.hash, location.key]);
-  useEffect(() => {
-    if (!isCatalog) return;
-    const update = () => setCompact(window.scrollY > 24);
-    update();
-    window.addEventListener('scroll', update, { passive: true });
-    return () => window.removeEventListener('scroll', update);
-  }, [isCatalog]);
-  const mobileTrigger = useRef<HTMLButtonElement>(null);
-  const [open, setOpen] = useState(false);
   const [logoutError, setLogoutError] = useState<unknown>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   useEffect(() => {
     const titles: Record<string, string> = {
+      '/': 'Learn in flow',
       '/courses': 'Course catalog',
       '/learning': 'My learning',
       '/login': 'Sign in',
@@ -130,53 +118,6 @@ function Shell() {
     };
     document.title = `${titles[location.pathname] ?? (location.pathname.startsWith('/learn/') ? 'Classroom' : 'Course')} · EduFlow`;
   }, [location.pathname]);
-  const close = () => setOpen(false);
-  const closeWithFocus = () => {
-    setOpen(false);
-    mobileTrigger.current?.focus();
-  };
-  const nav = isCatalog ? (
-    <>
-      <CatalogAnchor hash="#courses" onClick={close}>
-        Explore Courses
-      </CatalogAnchor>
-      <CatalogAnchor hash="#how-it-works" onClick={close}>
-        How It Works
-      </CatalogAnchor>
-      <CatalogAnchor hash="#for-instructors" onClick={close}>
-        For Instructors
-      </CatalogAnchor>
-      <CatalogAnchor hash="#about" onClick={close}>
-        About
-      </CatalogAnchor>
-    </>
-  ) : (
-    <>
-      <NavLink to="/courses" onClick={close}>
-        Catalog
-      </NavLink>
-      {auth.user?.role === 'student' && (
-        <NavLink to="/learning" onClick={close}>
-          My learning
-        </NavLink>
-      )}
-      {auth.user && ['instructor', 'admin'].includes(auth.user.role) && (
-        <>
-          <NavLink to="/instructor" end onClick={close}>
-            Overview
-          </NavLink>
-          <NavLink to="/instructor/courses" onClick={close}>
-            My courses
-          </NavLink>
-        </>
-      )}
-      {auth.user?.role === 'admin' && (
-        <NavLink to="/admin" onClick={close}>
-          Administration
-        </NavLink>
-      )}
-    </>
-  );
   const logout = async () => {
     if (getAuthoringDirty()) {
       if (!window.confirm('Sign out and discard your unsaved changes?')) return;
@@ -193,174 +134,26 @@ function Shell() {
     }
   };
   return (
-    <CatalogFrame active={isCatalog}>
+    <CatalogFrame active={isCatalog} pageClass={pageClass}>
       {isCatalog ? (
         <CatalogAnchor className="skip-link" hash="#main">
           Skip to content
         </CatalogAnchor>
       ) : (
-        <a className="skip-link" href="#main">
+        <Link
+          className="skip-link"
+          to={{
+            pathname: location.pathname,
+            search: location.search,
+            hash: '#main',
+          }}
+        >
           Skip to content
-        </a>
+        </Link>
       )}
-      <header
-        className={
-          isCatalog
-            ? `site-header catalog-page-header${compact ? ' is-compact' : ''}`
-            : 'site-header'
-        }
-      >
-        <div className="header-inner">
-          <Link to="/courses" className="brand" aria-label="EduFlow home">
-            <span className="brand-mark">
-              <GraduationCap size={24} aria-hidden="true" />
-            </span>
-            EduFlow
-          </Link>
-          <nav className="desktop-nav" aria-label="Main navigation">
-            {nav}
-          </nav>
-          <div className="header-actions">
-            <ThemeControl />
-            {loggingOut ? (
-              <span className="small muted" role="status">
-                Signing out…
-              </span>
-            ) : auth.user ? (
-              <details
-                className="account"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    e.currentTarget.open = false;
-                    e.currentTarget.querySelector('summary')?.focus();
-                  }
-                }}
-              >
-                <summary
-                  aria-label="Account menu"
-                  className={isCatalog ? 'catalog-account-trigger' : undefined}
-                >
-                  <span className="avatar">
-                    {auth.user.full_name
-                      .split(/\s+/)
-                      .map((n) => n[0])
-                      .slice(0, 2)
-                      .join('')
-                      .toUpperCase()}
-                  </span>
-                  {isCatalog && (
-                    <ChevronDown
-                      className="catalog-account-chevron"
-                      size={16}
-                      aria-hidden="true"
-                    />
-                  )}
-                </summary>
-                <div className="account-panel">
-                  <strong>{auth.user.full_name}</strong>
-                  <span>{auth.user.email}</span>
-                  <span className="role-label">{auth.user.role}</span>
-                  {isCatalog && (
-                    <Link
-                      className="catalog-role-link"
-                      to={
-                        auth.user.role === 'student'
-                          ? '/learning'
-                          : auth.user.role === 'admin'
-                            ? '/admin'
-                            : '/instructor'
-                      }
-                    >
-                      Go to my workspace
-                    </Link>
-                  )}
-                  <button
-                    className="button secondary"
-                    disabled={loggingOut}
-                    onClick={() => void logout()}
-                  >
-                    {loggingOut ? 'Signing out…' : 'Sign out'}
-                  </button>
-                </div>
-              </details>
-            ) : auth.status === 'loading' ? (
-              <span className="small muted">Checking session…</span>
-            ) : auth.error ? (
-              <button
-                className="button secondary"
-                onClick={() => void auth.retry().catch(() => undefined)}
-              >
-                {auth.error.name === 'LogoutRevocationError'
-                  ? 'Retry sign out'
-                  : 'Retry session'}
-              </button>
-            ) : (
-              <Link className="button primary" to="/login">
-                Sign in
-              </Link>
-            )}
-            {isCatalog && !auth.error && auth.status !== 'loading' && (
-              <Link
-                className="button catalog-start"
-                to={
-                  auth.user
-                    ? auth.user.role === 'student'
-                      ? '/learning'
-                      : auth.user.role === 'admin'
-                        ? '/admin'
-                        : '/instructor'
-                    : '/register'
-                }
-              >
-                {auth.user ? 'Workspace' : 'Get Started'}{' '}
-                <ArrowUpRight size={18} aria-hidden="true" />
-              </Link>
-            )}
-            <button
-              ref={mobileTrigger}
-              className="icon-button mobile-toggle"
-              aria-label={open ? 'Close navigation' : 'Open navigation'}
-              aria-expanded={open}
-              aria-controls="mobile-navigation"
-              onClick={() => setOpen(!open)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') closeWithFocus();
-              }}
-            >
-              <Menu aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-        {open && (
-          <nav
-            className="mobile-nav"
-            id="mobile-navigation"
-            aria-label="Mobile navigation"
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') closeWithFocus();
-            }}
-          >
-            {nav}
-            {isCatalog && (
-              <Link
-                onClick={close}
-                to={
-                  auth.user
-                    ? auth.user.role === 'student'
-                      ? '/learning'
-                      : auth.user.role === 'admin'
-                        ? '/admin'
-                        : '/instructor'
-                    : '/register'
-                }
-              >
-                {auth.user ? 'Go to workspace' : 'Get Started'}
-              </Link>
-            )}
-          </nav>
-        )}
-      </header>
+      <Navbar loggingOut={loggingOut} onLogout={() => void logout()} />
       <main
+        ref={revealRef}
         id="main"
         className={isCatalog ? 'catalog-main' : 'main-container'}
         tabIndex={-1}
@@ -369,7 +162,7 @@ function Shell() {
           <ErrorPanel error={logoutError} retry={() => void logout()} />
         )}
         <Routes>
-          <Route path="/" element={<Navigate to="/courses" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/courses" element={<CatalogPage />} />
           <Route path="/courses/:slug" element={<CoursePage />} />
           <Route path="/login" element={<AuthPage />} />
@@ -487,6 +280,24 @@ function Shell() {
       </main>
       <footer className="site-footer">
         <span>EduFlow</span>
+        {!isCatalog && (
+          <nav aria-label="Footer navigation">
+            <Link to="/courses">Explore courses</Link>
+            <Link
+              to={
+                auth.user
+                  ? auth.user.role === 'student'
+                    ? '/learning'
+                    : auth.user.role === 'admin'
+                      ? '/admin'
+                      : '/instructor'
+                  : '/login'
+              }
+            >
+              {auth.user ? 'Your workspace' : 'Sign in'}
+            </Link>
+          </nav>
+        )}
         <span>A clear path to your next skill.</span>
       </footer>
     </CatalogFrame>

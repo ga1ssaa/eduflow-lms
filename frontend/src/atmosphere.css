@@ -1,0 +1,177 @@
+/* Shared lighting recipes: discovery, branded introductions, and quiet workspaces. */
+:root,
+.catalog-shell,
+.product-shell {
+  --atmosphere-floor: var(--bg);
+  --atmosphere-discovery:
+    radial-gradient(ellipse at 50% 58%, #49c3ff80 0%, transparent 46%),
+    radial-gradient(ellipse at 50% 22%, #1460ed 0%, transparent 60%),
+    linear-gradient(
+      180deg,
+      #09318d 0%,
+      #0c43bc 38%,
+      #2676ed 63%,
+      #b8dfff 85%,
+      var(--atmosphere-floor) 100%
+    );
+  --atmosphere-learning:
+    radial-gradient(ellipse at 100% 110%, #fd91cc60, transparent 60%),
+    radial-gradient(ellipse at 30% 0%, #1872dc90, transparent 72%),
+    linear-gradient(125deg, #09318d, #0848a5 68%, #1163bb);
+  --atmosphere-workspace:
+    radial-gradient(ellipse 85% 620px at 15% -60px, #8bc9ff75, transparent 85%),
+    radial-gradient(
+      ellipse 60% 560px at 100% 300px,
+      #fd91cc20,
+      transparent 80%
+    ),
+    linear-gradient(180deg, #e9f3ff, var(--bg) 1000px);
+  --atmosphere-pixel-texture: radial-gradient(#ffffff60 1px, transparent 1px);
+  --atmosphere-rays: repeating-linear-gradient(
+    90deg,
+    #78d3ff24 0px,
+    transparent 2px,
+    transparent 7px,
+    #0297de15 9px,
+    transparent 12px
+  );
+}
+:root[data-theme='dark'],
+[data-theme='dark'] .catalog-shell,
+[data-theme='dark'] .product-shell {
+  --atmosphere-discovery:
+    radial-gradient(ellipse at 50% 80%, #fc734dad 0%, transparent 38%),
+    radial-gradient(ellipse at 50% 56%, #0297debf 0%, transparent 47%),
+    linear-gradient(
+      180deg,
+      #02070a 0%,
+      #03101f 33%,
+      #06314e 65%,
+      #19242e 86%,
+      #02070a 100%
+    );
+  --atmosphere-learning:
+    radial-gradient(ellipse at 95% 110%, #fc734d55, transparent 62%),
+    radial-gradient(ellipse at 35% 0%, #0297de55, transparent 75%),
+    linear-gradient(125deg, #02070a, #082537 75%, #14202a);
+  --atmosphere-workspace:
+    radial-gradient(ellipse 90% 720px at 15% 0%, #0297de30, transparent 85%),
+    radial-gradient(
+      ellipse 65% 620px at 100% 320px,
+      #fc734d17,
+      transparent 80%
+    ),
+    linear-gradient(180deg, #04131f, var(--bg) 1100px);
+}
+.catalog-shell {
+  --atmosphere-floor: var(--catalog-shell-bg);
+}
+.atmosphere-decoration {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+  user-select: none;
+}
+.atmosphere-decoration .atmosphere-rays {
+  position: absolute;
+  inset: 0;
+  display: block;
+  background: var(--atmosphere-rays);
+  mask-image: radial-gradient(
+    ellipse 60% 90% at 60% 80%,
+    #000,
+    transparent 95%
+  );
+  opacity: 0;
+}
+[data-theme='dark'] .atmosphere-decoration .atmosphere-rays {
+  opacity: 0.6;
+}
+.atmosphere-decoration > i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  opacity: 0.4;
+}
+.atmosphere-decoration > i:nth-of-type(1) {
+  left: 4%;
+  top: 18%;
+  width: 4px;
+  height: 4px;
+}
+.atmosphere-decoration > i:nth-of-type(2) {
+  left: 8%;
+  top: 54%;
+  width: 10px;
+  height: 10px;
+  opacity: 0.2;
+}
+.atmosphere-decoration > i:nth-of-type(3) {
+  left: 12%;
+  top: 35%;
+  width: 3px;
+  height: 3px;
+}
+.atmosphere-decoration > i:nth-of-type(4) {
+  right: 5%;
+  top: 22%;
+  width: 9px;
+  height: 9px;
+  opacity: 0.25;
+}
+.atmosphere-decoration > i:nth-of-type(5) {
+  right: 9%;
+  top: 48%;
+  width: 4px;
+  height: 4px;
+}
+.atmosphere-decoration > i:nth-of-type(6) {
+  right: 3%;
+  top: 68%;
+  width: 13px;
+  height: 13px;
+  opacity: 0.18;
+}
+.atmosphere-decoration > i:nth-of-type(7) {
+  left: 6%;
+  top: 78%;
+  width: 5px;
+  height: 5px;
+}
+.atmosphere-decoration > i:nth-of-type(8) {
+  right: 16%;
+  top: 12%;
+  width: 3px;
+  height: 3px;
+}
+[data-theme='dark'] .atmosphere-decoration > i {
+  opacity: 0.18;
+}
+/* Workspace texture stays at the edges, away from readable lesson/form surfaces. */
+.product-shell.workspace-shell::before {
+  content: '';
+  position: absolute;
+  top: 100px;
+  left: 0;
+  right: 0;
+  height: 680px;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--atmosphere-pixel-texture);
+  background-size: 18px 18px;
+  mask-image: linear-gradient(
+    90deg,
+    #000,
+    transparent 16%,
+    transparent 84%,
+    #000
+  );
+  opacity: 0.55;
+}
+[data-theme='dark'] .product-shell.workspace-shell::before {
+  opacity: 0.14;
+}

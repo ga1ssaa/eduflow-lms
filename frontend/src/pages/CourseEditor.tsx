@@ -1,3 +1,5 @@
+import '../pages.css';
+import { SelectControl } from '../components/SelectControl';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -162,120 +164,167 @@ function CourseForm({ initial }: { initial?: CourseRead }) {
           </Link>
         </div>
       )}
-      <form className="author-form surface" onSubmit={submit}>
-        <fieldset disabled={mutation.isPending}>
-          <legend className="sr-only">Course details</legend>
-          <Field label="Course title" name="course-title" error={errors.title}>
-            <input
-              name="title"
-              value={values.title}
-              onChange={(e) => change('title', e.target.value)}
-              required
-              maxLength={200}
-              aria-invalid={!!errors.title}
-              aria-describedby={fieldDescription('course-title', errors.title)}
-            />
-          </Field>
-          <Field
-            label="Slug"
-            name="course-slug"
-            error={errors.slug}
-            help="Lowercase letters and numbers, separated by single hyphens. Changing the title does not change the slug."
-          >
-            <input
-              name="slug"
-              value={values.slug}
-              onChange={(e) => change('slug', e.target.value)}
-              required
-              maxLength={200}
-              pattern="[a-z0-9]+(-[a-z0-9]+)*"
-              aria-invalid={!!errors.slug}
-              aria-describedby={fieldDescription(
-                'course-slug',
-                errors.slug,
-                true,
-              )}
-            />
-          </Field>
-          <Field
-            label="Description"
-            name="course-description"
-            error={errors.description}
-          >
-            <textarea
-              name="description"
-              rows={7}
-              maxLength={100000}
-              value={values.description}
-              onChange={(e) => change('description', e.target.value)}
-              aria-invalid={!!errors.description}
-              aria-describedby={fieldDescription(
-                'course-description',
-                errors.description,
-              )}
-            />
-          </Field>
-          <div className="author-field-pair">
+      <div className="author-form-layout">
+        <form className="author-form surface" onSubmit={submit}>
+          <div className="author-form-heading">
+            <span>01</span>
+            <div>
+              <h2>Course essentials</h2>
+              <p>A clear introduction helps the right learners find you.</p>
+            </div>
+          </div>
+          <fieldset disabled={mutation.isPending}>
+            <legend className="sr-only">Course details</legend>
             <Field
-              label="Category"
-              name="course-category"
-              error={errors.category}
-              help="Enter a category. A category is required before publication."
+              label="Course title"
+              name="course-title"
+              error={errors.title}
             >
               <input
-                name="category"
-                maxLength={100}
-                value={values.category}
-                onChange={(e) => change('category', e.target.value)}
-                aria-invalid={!!errors.category}
+                name="title"
+                value={values.title}
+                onChange={(e) => change('title', e.target.value)}
+                required
+                maxLength={200}
+                aria-invalid={!!errors.title}
                 aria-describedby={fieldDescription(
-                  'course-category',
-                  errors.category,
+                  'course-title',
+                  errors.title,
+                )}
+              />
+            </Field>
+            <Field
+              label="Slug"
+              name="course-slug"
+              error={errors.slug}
+              help="Lowercase letters and numbers, separated by single hyphens. Changing the title does not change the slug."
+            >
+              <input
+                name="slug"
+                value={values.slug}
+                onChange={(e) => change('slug', e.target.value)}
+                required
+                maxLength={200}
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                aria-invalid={!!errors.slug}
+                aria-describedby={fieldDescription(
+                  'course-slug',
+                  errors.slug,
                   true,
                 )}
               />
             </Field>
-            <Field label="Level" name="course-level" error={errors.level}>
-              <select
-                name="level"
-                value={values.level}
-                onChange={(e) => change('level', e.target.value as Level)}
-                aria-invalid={!!errors.level}
-                aria-describedby={fieldDescription(
-                  'course-level',
-                  errors.level,
-                )}
-              >
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
-              </select>
-            </Field>
-          </div>
-          <MutationError error={mutation.error} />
-          <div className="author-save-row">
-            <button
-              className="button primary"
-              disabled={mutation.isPending || (!!initial && !dirty)}
+            <Field
+              label="Description"
+              name="course-description"
+              error={errors.description}
             >
-              {mutation.isPending
-                ? 'Saving course…'
-                : initial
-                  ? 'Save changes'
-                  : 'Create course'}
-            </button>
-            <span className="author-save-status" role="status">
-              {saved
-                ? 'Course saved.'
-                : dirty
-                  ? 'Unsaved changes'
+              <textarea
+                name="description"
+                rows={7}
+                maxLength={100000}
+                value={values.description}
+                onChange={(e) => change('description', e.target.value)}
+                aria-invalid={!!errors.description}
+                aria-describedby={fieldDescription(
+                  'course-description',
+                  errors.description,
+                )}
+              />
+            </Field>
+            <div className="author-field-pair">
+              <Field
+                label="Category"
+                name="course-category"
+                error={errors.category}
+                help="Enter a category. A category is required before publication."
+              >
+                <input
+                  name="category"
+                  maxLength={100}
+                  value={values.category}
+                  onChange={(e) => change('category', e.target.value)}
+                  aria-invalid={!!errors.category}
+                  aria-describedby={fieldDescription(
+                    'course-category',
+                    errors.category,
+                    true,
+                  )}
+                />
+              </Field>
+              <Field label="Level" name="course-level" error={errors.level}>
+                <SelectControl
+                  name="level"
+                  value={values.level}
+                  onChange={(e) => change('level', e.target.value as Level)}
+                  aria-invalid={!!errors.level}
+                  aria-describedby={fieldDescription(
+                    'course-level',
+                    errors.level,
+                  )}
+                >
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </SelectControl>
+              </Field>
+            </div>
+            <MutationError error={mutation.error} />
+            <div className="author-save-row">
+              <button
+                className="button primary"
+                disabled={mutation.isPending || (!!initial && !dirty)}
+              >
+                {mutation.isPending
+                  ? 'Saving course…'
                   : initial
-                    ? 'All changes saved'
-                    : 'Draft not created yet'}
-            </span>
-          </div>
-        </fieldset>
-      </form>
+                    ? 'Save changes'
+                    : 'Create course'}
+              </button>
+              <span className="author-save-status" role="status">
+                {saved
+                  ? 'Course saved.'
+                  : dirty
+                    ? 'Unsaved changes'
+                    : initial
+                      ? 'All changes saved'
+                      : 'Draft not created yet'}
+              </span>
+            </div>
+          </fieldset>
+        </form>
+        <aside className="authoring-guide surface" data-reveal>
+          <p className="eyebrow">FROM IDEA TO COURSE</p>
+          <h2>Make the first step clear.</h2>
+          <ol>
+            <li>
+              <strong>Set the direction.</strong>
+              <p>
+                Give your course a specific title, description, category, and
+                level.
+              </p>
+            </li>
+            <li>
+              <strong>Build the learning path.</strong>
+              <p>
+                Add modules and lessons to guide learners through your material.
+              </p>
+            </li>
+            <li>
+              <strong>Review, then publish.</strong>
+              <p>
+                Publication requires a complete description, category, and
+                lesson content or video.
+              </p>
+            </li>
+          </ol>
+          <p className="authoring-guide-note">
+            {initial?.status === 'published'
+              ? 'Published course edits must keep the curriculum ready for learners.'
+              : 'Your draft stays out of the public catalog until it is published.'}
+          </p>
+        </aside>
+      </div>
     </>
   );
 }

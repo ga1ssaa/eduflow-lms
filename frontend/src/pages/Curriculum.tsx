@@ -1,3 +1,4 @@
+import '../pages.css';
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
@@ -86,7 +87,7 @@ function CurriculumEditor({ courseId }: { courseId: string }) {
       <PageHeading eyebrow="COURSE AUTHORING" title="Manage curriculum">
         <p>{c.title}</p>
       </PageHeading>
-      <div className="course-metadata">
+      <div className="course-metadata curriculum-course-summary surface">
         <Badge success={c.status === 'published'}>{c.status}</Badge>
         <Link className="text-link" to={`/instructor/courses/${c.id}/edit`}>
           Edit course details
@@ -113,7 +114,7 @@ function CurriculumEditor({ courseId }: { courseId: string }) {
       {course.isError && (
         <ErrorPanel error={course.error} retry={() => void course.refetch()} />
       )}
-      <div className="author-curriculum">
+      <div className="author-curriculum product-curriculum">
         {c.modules.length === 0 && (
           <p className="author-notice">
             Add your first module, then add lessons inside it.
@@ -126,7 +127,7 @@ function CurriculumEditor({ courseId }: { courseId: string }) {
             aria-label={`Module: ${module.title}`}
           >
             <div className="author-module-heading">
-              <div>
+              <div data-reveal>
                 <p className="eyebrow">MODULE {module.position}</p>
                 <h2>{module.title}</h2>
               </div>

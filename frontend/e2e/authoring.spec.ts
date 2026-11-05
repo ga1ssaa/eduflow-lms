@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '@playwright/test';
+import { chooseTheme } from './theme';
 
 type Account = { email: string; password: string };
 const fixturePath = process.env.EDUFLOW_E2E_FIXTURE_FILE;
@@ -29,7 +30,9 @@ async function logout(page: Page) {
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   expect((await revoked).status()).toBe(204);
   await expect(
-    page.getByRole('link', { name: 'Sign in', exact: true }),
+    page
+      .getByRole('banner')
+      .getByRole('link', { name: 'Sign in', exact: true }),
   ).toBeVisible();
 }
 
@@ -245,7 +248,7 @@ test('author creates, orders and publishes curriculum; learning records survive 
     .getByRole('button', { name: 'Mark as complete', exact: true })
     .click();
   await expect(page.getByText('50%', { exact: true })).toBeVisible();
-  await page.getByLabel('Color theme').selectOption('dark');
+  await chooseTheme(page, 'dark');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   await expect(

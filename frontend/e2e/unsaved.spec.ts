@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { chooseTheme } from './theme';
 
 const path = process.env.EDUFLOW_E2E_FIXTURE_FILE;
 const fixtures: {
@@ -36,7 +37,7 @@ test('unsaved curriculum survives cancelled navigation and resets after an appro
     page.getByRole('heading', { name: 'Manage curriculum' }),
   ).toBeVisible();
   for (const theme of ['light', 'dark']) {
-    await page.getByLabel('Color theme').selectOption(theme);
+    await chooseTheme(page, theme);
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
     await page.screenshot({
       path: `test-results/authoring-${theme}.png`,

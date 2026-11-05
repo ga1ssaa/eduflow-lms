@@ -1,6 +1,7 @@
+import '../pages.css';
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Eye, EyeOff, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { isApiError } from '../lib/client';
 import { safeReturn } from '../components/ui';
@@ -9,6 +10,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const [params] = useSearchParams();
   const destination = safeReturn(params.get('returnTo'));
   const [pending, setPending] = useState(false);
+  const [passwordVisible, setPasswordVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const submit = async (event: FormEvent<HTMLFormElement>) => {
@@ -56,7 +58,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     );
   return (
     <div className="auth-layout">
-      <section className="auth-intro">
+      <section className="auth-intro" data-reveal>
         <span className="course-icon large">
           <BookOpen size={32} aria-hidden="true" />
         </span>
@@ -70,6 +72,12 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           One place for your courses, your progress, and the skills you’re
           building.
         </p>
+        <div className="auth-visual" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+          <ArrowUpRight strokeWidth={1} />
+        </div>
         <div className="auth-note">
           <span className="accent-line" />
           <p>
@@ -80,7 +88,12 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         </div>
       </section>
       <section className="auth-card surface">
-        <h2>{register ? 'Create your account' : 'Sign in to EduFlow'}</h2>
+        <p className="auth-form-kicker">
+          {register ? 'YOUR NEXT CHAPTER' : 'YOUR LEARNING SPACE'}
+        </p>
+        <h2 data-reveal>
+          {register ? 'Create your account' : 'Sign in to EduFlow'}
+        </h2>
         <p className="muted">
           {register
             ? 'Start your learning journey with a student account.'
@@ -130,22 +143,37 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           </label>
           <label>
             <span>Password</span>
-            <input
-              type="password"
-              name="password"
-              autoComplete={register ? 'new-password' : 'current-password'}
-              required
-              minLength={register ? 12 : 1}
-              maxLength={128}
-              aria-invalid={!!errors.password}
-              aria-describedby={
-                register
-                  ? `password-help${errors.password ? ' password-error' : ''}`
-                  : errors.password
-                    ? 'password-error'
-                    : undefined
-              }
-            />
+            <div className="auth-password-control">
+              <input
+                type={passwordVisible ? 'text' : 'password'}
+                name="password"
+                autoComplete={register ? 'new-password' : 'current-password'}
+                required
+                minLength={register ? 12 : 1}
+                maxLength={128}
+                aria-invalid={!!errors.password}
+                aria-describedby={
+                  register
+                    ? `password-help${errors.password ? ' password-error' : ''}`
+                    : errors.password
+                      ? 'password-error'
+                      : undefined
+                }
+              />
+              <button
+                type="button"
+                className="auth-password-toggle"
+                aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+                aria-pressed={passwordVisible}
+                onClick={() => setPasswordVisible((visible) => !visible)}
+              >
+                {passwordVisible ? (
+                  <EyeOff size={18} aria-hidden="true" />
+                ) : (
+                  <Eye size={18} aria-hidden="true" />
+                )}
+              </button>
+            </div>
             {register && (
               <span className="field-help" id="password-help">
                 12–128 characters, with a letter and a non-space number or
