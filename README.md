@@ -24,6 +24,8 @@ Admins land on `/admin`, with actual total/published/draft counts, course search
 
 Access tokens stay in memory. Refresh cookies remain HttpOnly; auth POSTs include credentials and the CSRF marker. Session recovery serializes cookie operations, shares refreshes within a tab, and uses Web Locks where supported across tabs. Older browsers without Web Locks may reject a racing refresh safely and require sign-in again. Logout cancels private requests and clears cached data; failed server revocation offers a sign-out retry. Light/dark/system selection is the only persisted browser preference.
 
+The effective theme is resolved in the document head before React starts. Initial entry and refresh show it immediately without theme motion. On Home and Explore Courses, one 1.6-second scene timeline coordinates the actual Hero's viewport-sized 2D trajectory with a directional reveal of the existing destination gradients, lighting, and pixels. The Hero stays full-size and upright. Sunrise brings it from beyond the bottom-left viewport into its original position; sunset moves it beyond the bottom-right before the destination Hero's gentle centered entrance. Temporary atmosphere layers conceal the underlying palette handoff and are removed at completion. System follows OS changes; routes without a visible Hero, reduced motion, and unavailable animation support switch immediately. Client-side navigation does not replay the scene. Theme selection preserves route, focus, scroll position, and application state.
+
 ```sh
 cd frontend
 npm run check

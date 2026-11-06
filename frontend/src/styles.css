@@ -17,7 +17,8 @@
   --color-accent-emphasis: var(--accent-emphasis);
   --color-accent-track: var(--accent-track);
 }
-:root {
+:root,
+[data-scene-theme] {
   font-family:
     Inter,
     ui-sans-serif,
@@ -56,7 +57,8 @@
   --focus: #09318d;
   color-scheme: light;
 }
-:root[data-theme='dark'] {
+:root[data-theme='dark'],
+[data-scene-theme='dark'] {
   --primary: #0297de;
   --primary-ink: #02070a;
   --bg: #02070a;

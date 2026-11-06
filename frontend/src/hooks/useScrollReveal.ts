@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 
 const targetSelector = '[data-reveal]';
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
+const themeMotionEvent = 'eduflow:theme-transition-start';
 
 /** Content stays visible until an intersection starts its one-time entrance. */
 export function useScrollReveal(pageKey: string) {
@@ -37,7 +38,13 @@ export function useScrollReveal(pageKey: string) {
                 element.dataset.revealState !== 'observed'
               )
                 continue;
-              if (media?.matches || element.contains(document.activeElement)) {
+              if (
+                media?.matches ||
+                document.documentElement.hasAttribute(
+                  'data-theme-transition',
+                ) ||
+                element.contains(document.activeElement)
+              ) {
                 finish(element);
                 continue;
               }
@@ -122,6 +129,11 @@ export function useScrollReveal(pageKey: string) {
       observer?.disconnect();
       targets.forEach(finish);
     };
+    const onThemeMotion = () => {
+      targets.forEach((element) => {
+        if (element.dataset.revealState === 'revealing') finish(element);
+      });
+    };
 
     discover(root);
     const mutations =
@@ -139,6 +151,7 @@ export function useScrollReveal(pageKey: string) {
     mutations?.observe(root, { childList: true, subtree: true });
     root.addEventListener('focusin', onFocus);
     root.addEventListener('animationend', onAnimationEnd);
+    document.addEventListener(themeMotionEvent, onThemeMotion);
     if (media?.addEventListener)
       media.addEventListener('change', onMotionChange);
     else media?.addListener?.(onMotionChange);
@@ -157,6 +170,7 @@ export function useScrollReveal(pageKey: string) {
       targets.clear();
       root.removeEventListener('focusin', onFocus);
       root.removeEventListener('animationend', onAnimationEnd);
+      document.removeEventListener(themeMotionEvent, onThemeMotion);
       if (media?.removeEventListener)
         media.removeEventListener('change', onMotionChange);
       else media?.removeListener?.(onMotionChange);

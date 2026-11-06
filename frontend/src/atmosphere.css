@@ -1,7 +1,8 @@
 /* Shared lighting recipes: discovery, branded introductions, and quiet workspaces. */
 :root,
 .catalog-shell,
-.product-shell {
+.product-shell,
+[data-scene-theme].theme-scene-atmosphere[data-theme-scene-layer] {
   --atmosphere-floor: var(--bg);
   --atmosphere-discovery:
     radial-gradient(ellipse at 50% 58%, #49c3ff80 0%, transparent 46%),
@@ -38,7 +39,8 @@
 }
 :root[data-theme='dark'],
 [data-theme='dark'] .catalog-shell,
-[data-theme='dark'] .product-shell {
+[data-theme='dark'] .product-shell,
+[data-scene-theme='dark'].theme-scene-atmosphere[data-theme-scene-layer] {
   --atmosphere-discovery:
     radial-gradient(ellipse at 50% 80%, #fc734dad 0%, transparent 38%),
     radial-gradient(ellipse at 50% 56%, #0297debf 0%, transparent 47%),
@@ -75,7 +77,10 @@
   border-radius: inherit;
   user-select: none;
 }
-.atmosphere-decoration .atmosphere-rays {
+.atmosphere-decoration .atmosphere-rays,
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  .atmosphere-rays {
   position: absolute;
   inset: 0;
   display: block;
@@ -87,68 +92,97 @@
   );
   opacity: 0;
 }
-[data-theme='dark'] .atmosphere-decoration .atmosphere-rays {
+[data-theme='dark'] .atmosphere-decoration .atmosphere-rays,
+[data-scene-theme='dark'].theme-scene-atmosphere
+  .atmosphere-decoration
+  .atmosphere-rays {
   opacity: 0.6;
 }
-.atmosphere-decoration > i {
+.atmosphere-decoration > i,
+[data-scene-theme='light'].theme-scene-atmosphere .atmosphere-decoration > i {
   position: absolute;
   width: 6px;
   height: 6px;
   background: #fff;
   opacity: 0.4;
 }
-.atmosphere-decoration > i:nth-of-type(1) {
+.atmosphere-decoration > i:nth-of-type(1),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(1) {
   left: 4%;
   top: 18%;
   width: 4px;
   height: 4px;
 }
-.atmosphere-decoration > i:nth-of-type(2) {
+.atmosphere-decoration > i:nth-of-type(2),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(2) {
   left: 8%;
   top: 54%;
   width: 10px;
   height: 10px;
   opacity: 0.2;
 }
-.atmosphere-decoration > i:nth-of-type(3) {
+.atmosphere-decoration > i:nth-of-type(3),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(3) {
   left: 12%;
   top: 35%;
   width: 3px;
   height: 3px;
 }
-.atmosphere-decoration > i:nth-of-type(4) {
+.atmosphere-decoration > i:nth-of-type(4),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(4) {
   right: 5%;
   top: 22%;
   width: 9px;
   height: 9px;
   opacity: 0.25;
 }
-.atmosphere-decoration > i:nth-of-type(5) {
+.atmosphere-decoration > i:nth-of-type(5),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(5) {
   right: 9%;
   top: 48%;
   width: 4px;
   height: 4px;
 }
-.atmosphere-decoration > i:nth-of-type(6) {
+.atmosphere-decoration > i:nth-of-type(6),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(6) {
   right: 3%;
   top: 68%;
   width: 13px;
   height: 13px;
   opacity: 0.18;
 }
-.atmosphere-decoration > i:nth-of-type(7) {
+.atmosphere-decoration > i:nth-of-type(7),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(7) {
   left: 6%;
   top: 78%;
   width: 5px;
   height: 5px;
 }
-.atmosphere-decoration > i:nth-of-type(8) {
+.atmosphere-decoration > i:nth-of-type(8),
+[data-scene-theme='light'].theme-scene-atmosphere
+  .atmosphere-decoration
+  > i:nth-of-type(8) {
   right: 16%;
   top: 12%;
   width: 3px;
   height: 3px;
 }
-[data-theme='dark'] .atmosphere-decoration > i {
+[data-theme='dark'] .atmosphere-decoration > i,
+[data-scene-theme='dark'].theme-scene-atmosphere .atmosphere-decoration > i {
   opacity: 0.18;
 }
 /* Workspace texture stays at the edges, away from readable lesson/form surfaces. */
@@ -174,4 +208,24 @@
 }
 [data-theme='dark'] .product-shell.workspace-shell::before {
   opacity: 0.14;
+}
+
+/* Scene-local texture opacity stays independent of the document theme handoff. */
+[data-scene-theme='light'].theme-scene-atmosphere[data-theme-scene-layer]
+  .catalog-hero-pixels::before {
+  opacity: 0.55;
+}
+[data-scene-theme='light'].theme-scene-atmosphere[data-theme-scene-layer]
+  .catalog-hero-pixels::after {
+  opacity: 0.42;
+}
+[data-scene-theme='dark'].theme-scene-atmosphere[data-theme-scene-layer]
+  .catalog-hero-pixels::before,
+[data-scene-theme='dark'].theme-scene-atmosphere[data-theme-scene-layer]
+  .catalog-hero-pixels::after {
+  opacity: 0.12;
+}
+/* The original ray pseudo is hidden while its theme-local scene copy is active. */
+.theme-scene-background-muted::after {
+  visibility: hidden;
 }

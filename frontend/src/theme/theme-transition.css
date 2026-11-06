@@ -1,0 +1,21 @@
+/* At rest this is ordinary document flow. Only the actual Hero carrier is animated. */
+.theme-hero-orbit {
+  position: relative;
+  width: 100%;
+}
+.theme-hero-carrier {
+  width: 100%;
+}
+.theme-hero-orbit[data-hero-phase] .theme-hero-carrier {
+  will-change: transform, opacity;
+}
+/* Fixed content must reach the viewport edges, not be clipped by its original section. */
+.catalog-hero:has(> .theme-hero-orbit[data-hero-phase]),
+.landing-hero:has(> .theme-hero-orbit[data-hero-phase]) {
+  overflow: visible;
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-hero-orbit[data-hero-phase] .theme-hero-carrier {
+    will-change: auto;
+  }
+}

@@ -1,10 +1,21 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 import type { KeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Monitor, Moon, Sun } from 'lucide-react';
+import {
+  getThemeSnapshot,
+  setThemePreference,
+  subscribeTheme,
+} from './theme-transition-controller';
 import './theme-control.css';
 
-type Theme = 'light' | 'dark' | 'system';
 const themes = [
   { value: 'light', label: 'Light', Icon: Sun },
   { value: 'dark', label: 'Dark', Icon: Moon },
@@ -75,14 +86,10 @@ function tabStopsOutside(menu: HTMLElement | null): HTMLElement[] {
 }
 
 export function ThemeControl() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    try {
-      const saved = localStorage.getItem('eduflow-theme');
-      return saved === 'light' || saved === 'dark' ? saved : 'system';
-    } catch {
-      return 'system';
-    }
-  });
+  const { preference: theme } = useSyncExternalStore(
+    subscribeTheme,
+    getThemeSnapshot,
+  );
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(2);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -90,22 +97,6 @@ export function ThemeControl() {
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const openingIndex = useRef(2);
   const menuId = useId();
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-color-scheme: dark)');
-    const apply = () => {
-      document.documentElement.dataset.theme =
-        theme === 'system' ? (media.matches ? 'dark' : 'light') : theme;
-    };
-    apply();
-    media.addEventListener('change', apply);
-    try {
-      localStorage.setItem('eduflow-theme', theme);
-    } catch {
-      /* Theme remains usable when storage is unavailable. */
-    }
-    return () => media.removeEventListener('change', apply);
-  }, [theme]);
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -257,7 +248,7 @@ export function ThemeControl() {
                 tabIndex={activeIndex === index ? 0 : -1}
                 onFocus={() => setActiveIndex(index)}
                 onClick={() => {
-                  setTheme(value);
+                  setThemePreference(value);
                   closeAndRestoreFocus();
                 }}
               >

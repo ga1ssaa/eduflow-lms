@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { PublicCourseSummary } from '../../lib/types';
 import '../../catalog.css';
+import { ThemeTransition } from '../../theme/ThemeTransition';
 
 export function CatalogHero({
   action,
@@ -26,7 +27,7 @@ export function CatalogHero({
           <i key={i} />
         ))}
       </div>
-      <div className="catalog-hero-inner">
+      <ThemeTransition name="catalog" className="catalog-hero-inner">
         <div className="catalog-hero-copy" data-reveal>
           <p className="catalog-kicker">
             <span />A little curiosity. A whole new direction.
@@ -83,7 +84,7 @@ export function CatalogHero({
             A NEW PERSPECTIVE
           </span>
         </div>
-      </div>
+      </ThemeTransition>
       <div className="catalog-hero-bottom" aria-hidden="true">
         <span>FOLLOW YOUR CURIOSITY</span>
         <span>SCROLL TO EXPLORE ↓</span>

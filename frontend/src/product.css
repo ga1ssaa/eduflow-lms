@@ -224,7 +224,7 @@
   color: #fff;
   background: var(--atmosphere-discovery);
 }
-.product-shell .landing-hero > .product-kicker {
+.product-shell .landing-hero .theme-hero-face > .product-kicker {
   justify-content: center;
   color: #e2edff;
 }
@@ -696,7 +696,7 @@
     font-size: 44px;
     letter-spacing: -2px;
   }
-  .product-shell .landing-hero > .product-kicker {
+  .product-shell .landing-hero .theme-hero-face > .product-kicker {
     font-size: 8px;
     letter-spacing: 1.2px;
   }

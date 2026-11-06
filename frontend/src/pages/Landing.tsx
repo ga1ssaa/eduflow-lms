@@ -13,6 +13,7 @@ import { api } from '../lib/api';
 import { useAuth } from '../auth/AuthProvider';
 import { Empty, ErrorPanel, Loading } from '../components/ui';
 import { Atmosphere } from '../components/Atmosphere';
+import { ThemeTransition } from '../theme/ThemeTransition';
 
 export function LandingPage() {
   const { user } = useAuth();
@@ -31,37 +32,39 @@ export function LandingPage() {
     <div className="landing-page">
       <section className="landing-hero" aria-labelledby="landing-title">
         <Atmosphere className="landing-pixels" />
-        <p className="product-kicker">
-          <Sparkles size={15} aria-hidden="true" /> A LITTLE CURIOSITY GOES A
-          LONG WAY
-        </p>
-        <h1 id="landing-title" data-reveal>
-          Your next chapter.
-          <br />
-          <em>Make it a good one.</em>
-        </h1>
-        <p className="landing-description" data-reveal>
-          A place to follow your curiosity, build something new, and see how far
-          you’ve come. Learning, with a little more flow.
-        </p>
-        <div className="actions">
-          <Link className="button accent" to={destination}>
-            {user ? 'Open your workspace' : 'Find your starting point'}
-            <ArrowUpRight size={18} aria-hidden="true" />
-          </Link>
-          <Link className="button hero-secondary" to="/courses">
-            Explore courses
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-        </div>
-        <div className="landing-art" aria-hidden="true">
-          <div className="landing-art-sheet sheet-back" />
-          <div className="landing-art-sheet sheet-middle" />
-          <div className="landing-art-book">
-            <BookOpen size={56} strokeWidth={1.25} />
+        <ThemeTransition name="home">
+          <p className="product-kicker">
+            <Sparkles size={15} aria-hidden="true" /> A LITTLE CURIOSITY GOES A
+            LONG WAY
+          </p>
+          <h1 id="landing-title" data-reveal>
+            Your next chapter.
+            <br />
+            <em>Make it a good one.</em>
+          </h1>
+          <p className="landing-description" data-reveal>
+            A place to follow your curiosity, build something new, and see how
+            far you’ve come. Learning, with a little more flow.
+          </p>
+          <div className="actions">
+            <Link className="button accent" to={destination}>
+              {user ? 'Open your workspace' : 'Find your starting point'}
+              <ArrowUpRight size={18} aria-hidden="true" />
+            </Link>
+            <Link className="button hero-secondary" to="/courses">
+              Explore courses
+              <ArrowRight size={18} aria-hidden="true" />
+            </Link>
           </div>
-          <span>DISCOVER · LEARN · GROW</span>
-        </div>
+          <div className="landing-art" aria-hidden="true">
+            <div className="landing-art-sheet sheet-back" />
+            <div className="landing-art-sheet sheet-middle" />
+            <div className="landing-art-book">
+              <BookOpen size={56} strokeWidth={1.25} />
+            </div>
+            <span>DISCOVER · LEARN · GROW</span>
+          </div>
+        </ThemeTransition>
       </section>
       <section
         className="landing-featured product-section"

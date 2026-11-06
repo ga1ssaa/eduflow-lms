@@ -9,7 +9,10 @@ import '@fontsource/inter/700.css';
 import { AuthProvider } from './auth/AuthProvider';
 import App from './App';
 import { UnsavedChangesGuard } from './components/UnsavedChangesGuard';
+import { initializeThemeTransition } from './theme/theme-transition-controller';
 import './styles.css';
+
+initializeThemeTransition();
 
 const queryClient = new QueryClient({
   defaultOptions: {

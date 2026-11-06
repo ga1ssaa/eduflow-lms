@@ -1,10 +1,19 @@
 import { act, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 beforeEach(() => {
   vi.resetModules();
+  delete document.documentElement.dataset.themeEntrance;
+});
+afterEach(async () => {
+  const { disposeThemeTransition } =
+    await import('../theme/theme-transition-controller');
+  disposeThemeTransition();
+  delete document.documentElement.dataset.themeEntrance;
+  delete document.documentElement.dataset.themeTransition;
+  document.documentElement.style.removeProperty('color-scheme');
 });
 
 async function renderTheme(extra?: ReactNode) {

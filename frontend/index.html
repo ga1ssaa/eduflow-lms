@@ -11,14 +11,20 @@
     <title>EduFlow — Keep learning</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <script>
+      var preference = 'system';
       try {
-        var preference = localStorage.getItem('eduflow-theme') || 'system';
-        var dark =
-          preference === 'dark' ||
-          (preference === 'system' &&
-            matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        var savedTheme = localStorage.getItem('eduflow-theme');
+        if (savedTheme === 'light' || savedTheme === 'dark')
+          preference = savedTheme;
       } catch (_) {}
+      var dark = preference === 'dark';
+      if (preference === 'system') {
+        try {
+          dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        } catch (_) {}
+      }
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
     </script>
   </head>
   <body>
