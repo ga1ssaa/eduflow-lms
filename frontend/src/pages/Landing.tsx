@@ -32,17 +32,17 @@ export function LandingPage() {
     <div className="landing-page">
       <section className="landing-hero" aria-labelledby="landing-title">
         <Atmosphere className="landing-pixels" />
-        <ThemeTransition name="home">
+        <ThemeTransition name="home" reveal="from-left">
           <p className="product-kicker">
             <Sparkles size={15} aria-hidden="true" /> A LITTLE CURIOSITY GOES A
             LONG WAY
           </p>
-          <h1 id="landing-title" data-reveal>
+          <h1 id="landing-title">
             Your next chapter.
             <br />
             <em>Make it a good one.</em>
           </h1>
-          <p className="landing-description" data-reveal>
+          <p className="landing-description">
             A place to follow your curiosity, build something new, and see how
             far you’ve come. Learning, with a little more flow.
           </p>
@@ -70,7 +70,7 @@ export function LandingPage() {
         className="landing-featured product-section"
         aria-labelledby="featured-title"
       >
-        <div className="section-heading" data-reveal>
+        <div className="section-heading" data-reveal="from-top">
           <div>
             <p className="product-kicker">OPEN A NEW DOOR</p>
             <h2 id="featured-title">A fresh perspective starts here.</h2>
@@ -147,7 +147,7 @@ export function LandingPage() {
         className="landing-how product-section"
         aria-labelledby="landing-how-title"
       >
-        <div data-reveal>
+        <div data-reveal="from-right">
           <p className="product-kicker">LESS FRICTION. MORE FORWARD.</p>
           <h2 id="landing-how-title">
             A clear path.
@@ -174,7 +174,7 @@ export function LandingPage() {
               text: 'Complete lessons, track your progress, and pick up where you left off.',
             },
           ].map(({ icon: Icon, title, text }, i) => (
-            <li key={title} data-reveal data-reveal-index={i}>
+            <li key={title} data-reveal="from-right" data-reveal-index={i}>
               <span className="landing-step-icon">
                 <Icon size={22} aria-hidden="true" />
               </span>
@@ -192,7 +192,7 @@ export function LandingPage() {
         className="landing-teach product-section"
         aria-labelledby="landing-teach-title"
       >
-        <div className="surface" data-reveal>
+        <div className="surface" data-reveal="from-top">
           <div>
             <p className="product-kicker">FOR THE KNOWLEDGE SHARERS</p>
             <h2 id="landing-teach-title">
@@ -220,18 +220,24 @@ export function LandingPage() {
           />
         </div>
       </section>
-      <section id="about" className="landing-about product-section" data-reveal>
-        <p className="product-kicker">THIS IS EDUFLOW</p>
-        <h2>
+      <section id="about" className="landing-about product-section">
+        <p className="product-kicker" data-reveal="from-bottom">
+          THIS IS EDUFLOW
+        </p>
+        <h2 data-reveal="from-bottom">
           A little more clarity.
           <br />
           <em>A lot more possibility.</em>
         </h2>
-        <p>
+        <p data-reveal="from-bottom">
           Real courses. Clear learning paths. One place to share what you know
           and build the skills you want.
         </p>
-        <Link className="button accent" to={destination}>
+        <Link
+          className="button accent"
+          to={destination}
+          data-reveal="from-bottom"
+        >
           {user ? 'Continue your journey' : 'Get started'}
           <ArrowUpRight size={18} aria-hidden="true" />
         </Link>

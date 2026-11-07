@@ -27,8 +27,12 @@ export function CatalogHero({
           <i key={i} />
         ))}
       </div>
-      <ThemeTransition name="catalog" className="catalog-hero-inner">
-        <div className="catalog-hero-copy" data-reveal>
+      <ThemeTransition
+        name="catalog"
+        className="catalog-hero-inner"
+        reveal="from-left"
+      >
+        <div className="catalog-hero-copy">
           <p className="catalog-kicker">
             <span />A little curiosity. A whole new direction.
           </p>
@@ -194,7 +198,7 @@ export function CatalogSections() {
         id="how-it-works"
         aria-labelledby="catalog-how-title"
       >
-        <div className="catalog-section-intro" data-reveal>
+        <div className="catalog-section-intro" data-reveal="from-right">
           <p className="catalog-section-kicker">A CLEAR PATH FORWARD</p>
           <h2 id="catalog-how-title">
             Less friction.
@@ -207,7 +211,7 @@ export function CatalogSections() {
           </p>
         </div>
         <ol className="catalog-steps">
-          <li data-reveal data-reveal-index={0}>
+          <li data-reveal="from-right" data-reveal-index={0}>
             <span className="catalog-step-number">01</span>
             <div>
               <h3>Find your starting point.</h3>
@@ -217,7 +221,7 @@ export function CatalogSections() {
               </p>
             </div>
           </li>
-          <li data-reveal data-reveal-index={1}>
+          <li data-reveal="from-right" data-reveal-index={1}>
             <span className="catalog-step-number">02</span>
             <div>
               <h3>Make space to learn.</h3>
@@ -227,7 +231,7 @@ export function CatalogSections() {
               </p>
             </div>
           </li>
-          <li data-reveal data-reveal-index={2}>
+          <li data-reveal="from-right" data-reveal-index={2}>
             <span className="catalog-step-number">03</span>
             <div>
               <h3>See yourself move forward.</h3>
@@ -240,12 +244,11 @@ export function CatalogSections() {
         </ol>
       </section>
       <section
-        data-reveal
         className="catalog-teach"
         id="for-instructors"
         aria-labelledby="catalog-teach-title"
       >
-        <div>
+        <div data-reveal="from-top">
           <p className="catalog-section-kicker">FOR THE KNOWLEDGE SHARERS</p>
           <h2 id="catalog-teach-title">
             You know something.
@@ -267,7 +270,11 @@ export function CatalogSections() {
             For accounts with instructor or administrator access.
           </p>
         </div>
-        <div className="catalog-teach-art" aria-hidden="true">
+        <div
+          className="catalog-teach-art"
+          aria-hidden="true"
+          data-reveal="from-top"
+        >
           <span />
           <span />
           <span />
@@ -275,21 +282,26 @@ export function CatalogSections() {
         </div>
       </section>
       <section
-        data-reveal
         className="catalog-about"
         id="about"
         aria-labelledby="catalog-about-title"
       >
-        <p className="catalog-section-kicker">THIS IS EDUFLOW</p>
-        <h2 id="catalog-about-title">
+        <p className="catalog-section-kicker" data-reveal="from-bottom">
+          THIS IS EDUFLOW
+        </p>
+        <h2 id="catalog-about-title" data-reveal="from-bottom">
           A little more clarity.
           <br />A lot more possibility.
         </h2>
-        <p>
+        <p data-reveal="from-bottom">
           A focused place to share knowledge and build skills. Real courses,
           clear learning paths, and room to keep growing.
         </p>
-        <CatalogAnchor className="catalog-about-link" hash="#courses">
+        <CatalogAnchor
+          className="catalog-about-link"
+          hash="#courses"
+          data-reveal="from-bottom"
+        >
           Find your next course
           <ArrowRight size={18} aria-hidden="true" />
         </CatalogAnchor>

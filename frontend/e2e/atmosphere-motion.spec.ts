@@ -266,7 +266,7 @@ test('ISOLATED UI FIXTURE catalog stays visible and manually paginates without I
   expect(fixture.unexpected).toEqual([]);
 });
 
-test('REAL Home below-fold content animates once with the shared 600ms, 24px entrance', async ({
+test('REAL Home below-fold content animates once with the approved 1050ms, 240px right entrance', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
@@ -301,6 +301,8 @@ test('REAL Home below-fold content animates once with the shared 600ms, 24px ent
         easing: getComputedStyle(target).animationTimingFunction,
         fromOpacity: frames[0].opacity,
         toOpacity: frames.at(-1)!.opacity,
+        fromX: new DOMMatrixReadOnly(String(frames[0].transform)).m41,
+        toX: new DOMMatrixReadOnly(String(frames.at(-1)!.transform)).m41,
         fromY: new DOMMatrixReadOnly(String(frames[0].transform)).m42,
         toY: new DOMMatrixReadOnly(String(frames.at(-1)!.transform)).m42,
       });
@@ -311,14 +313,17 @@ test('REAL Home below-fold content animates once with the shared 600ms, 24px ent
   );
   await expect(target).toHaveAttribute('data-test-motion', /duration/);
   const motion = JSON.parse((await target.getAttribute('data-test-motion'))!);
-  expect(motion.duration).toBe(600);
+  expect(motion.duration).toBe(1050);
   expect(motion.easing.replace(/\s/g, '')).toBe('cubic-bezier(0.22,1,0.36,1)');
   expect(Number(motion.fromOpacity)).toBe(0);
   expect(Number(motion.toOpacity)).toBe(1);
-  expect(motion.fromY).toBe(24);
+  expect(motion.fromX).toBe(240);
+  expect(motion.toX).toBe(0);
+  expect(motion.fromY).toBe(0);
   expect(motion.toY).toBe(0);
   await expect(target).toHaveAttribute('data-reveal-state', 'revealed');
   await expect(target).toHaveCSS('animation-name', 'none');
+  await expect(target).toHaveCSS('clip-path', 'none');
   await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
   await target.evaluate((element) =>
     element.scrollIntoView({ block: 'center', behavior: 'instant' }),

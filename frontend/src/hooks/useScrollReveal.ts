@@ -55,9 +55,15 @@ export function useScrollReveal(pageKey: string) {
                 element.style.getPropertyValue('--reveal-delay'),
                 10,
               );
+              const duration =
+                Number.parseFloat(
+                  getComputedStyle(element).getPropertyValue(
+                    '--reveal-duration',
+                  ),
+                ) || 600;
               timers.set(
                 element,
-                setTimeout(() => finish(element), delay + 700),
+                setTimeout(() => finish(element), delay + duration + 100),
               );
             }
           },

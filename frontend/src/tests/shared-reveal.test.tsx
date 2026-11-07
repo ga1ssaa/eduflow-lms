@@ -169,6 +169,35 @@ describe('shared scroll reveal lifecycle', () => {
     expect(target).toHaveAttribute('data-reveal-state', 'revealed');
   });
 
+  it('keeps longer directional entrances active until their duration-aware fallback, without changing card timing', () => {
+    vi.useFakeTimers();
+    render(
+      <Page>
+        <div data-reveal="from-right" data-testid="directional">
+          Heading
+        </div>
+        <article data-reveal data-testid="card">
+          Course
+        </article>
+      </Page>,
+    );
+    const directional = screen.getByTestId('directional');
+    const card = screen.getByTestId('card');
+    directional.style.setProperty('--reveal-duration', '1050ms');
+    const observer = ObservedIntersections.instances[0];
+    act(() => {
+      observer.enter(directional);
+      observer.enter(card);
+      vi.advanceTimersByTime(700);
+    });
+    expect(card).toHaveAttribute('data-reveal-state', 'revealed');
+    expect(directional).toHaveAttribute('data-reveal-state', 'revealing');
+    act(() => vi.advanceTimersByTime(449));
+    expect(directional).toHaveAttribute('data-reveal-state', 'revealing');
+    act(() => vi.advanceTimersByTime(1));
+    expect(directional).toHaveAttribute('data-reveal-state', 'revealed');
+  });
+
   it('reveals keyboard-focused content immediately instead of fading an active control', () => {
     render(
       <Page>

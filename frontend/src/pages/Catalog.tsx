@@ -87,7 +87,7 @@ export function CatalogPage() {
         className="catalog-listing"
         aria-labelledby="catalog-heading"
       >
-        <div className="catalog-results-heading" data-reveal>
+        <div className="catalog-results-heading" data-reveal="from-top">
           <div>
             <p className="catalog-kicker">FIND YOUR NEXT CHAPTER</p>
             <h2 id="catalog-heading">Curiosity looks good on you.</h2>

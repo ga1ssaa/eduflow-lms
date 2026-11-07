@@ -134,8 +134,19 @@ test('indicator slides through intermediate geometry and reduced motion disables
       };
       requestAnimationFrame(check);
     });
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return { start, end, middle: indicator.getBoundingClientRect().x };
+    // Class updates can precede the first painted transition frame. Sample
+    // actual intermediate geometry instead of a wall-clock timeout.
+    const middle = await new Promise<number>((resolve) => {
+      const deadline = performance.now() + 3000;
+      const sampleFrame = () => {
+        const x = indicator.getBoundingClientRect().x;
+        if (x > start + 1 && x < end - 1) resolve(x);
+        else if (performance.now() >= deadline) resolve(Number.NaN);
+        else requestAnimationFrame(sampleFrame);
+      };
+      requestAnimationFrame(sampleFrame);
+    });
+    return { start, end, middle };
   });
   expect(sample.middle).toBeGreaterThan(sample.start + 1);
   expect(sample.middle).toBeLessThan(sample.end - 1);

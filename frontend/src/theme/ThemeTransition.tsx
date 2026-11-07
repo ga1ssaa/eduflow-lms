@@ -65,10 +65,12 @@ export function ThemeTransition({
   children,
   className = '',
   name,
+  reveal,
 }: {
   children: ReactNode;
   className?: string;
   name: 'home' | 'catalog';
+  reveal?: 'from-left';
 }) {
   const wrapper = useRef<HTMLDivElement>(null);
   const carrier = useRef<HTMLDivElement>(null);
@@ -224,7 +226,11 @@ export function ThemeTransition({
       data-hero-scene-id={scene?.id}
     >
       <div ref={carrier} className="theme-hero-carrier" data-hero-carrier>
-        <div className={`theme-hero-face ${className}`.trim()} data-hero-face>
+        <div
+          className={`theme-hero-face ${className}`.trim()}
+          data-hero-face
+          data-reveal={reveal}
+        >
           {children}
         </div>
       </div>
