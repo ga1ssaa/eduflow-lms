@@ -117,6 +117,35 @@ docker compose exec backend python -m app.cli create-admin --email your-address@
 
 The CLI prompts for the password and confirmation without echoing it and requires a terminal. It refuses existing accounts and never silently promotes a student. There is no default administrator and no startup bootstrap. Do not pass passwords through command arguments or shell history.
 
+To explicitly provision a **new local development instructor**, use the same interactive CLI:
+
+```sh
+docker compose exec backend python -m app.cli create-instructor --email instructor@example.com --full-name "Development Instructor"
+```
+
+Replace the example email and name. Verify that the configured database is local development first, and use a backend image containing the command. `create-instructor` requires `ENVIRONMENT=development` and rejects all other environments before prompting or opening a database session. Password entry and confirmation are hidden; the existing registration validation and Argon2id hashing apply. Success prints the new instructor UUID for the demo seed. Duplicate accounts are rejected without modification or promotion. There is no password argument, automatic startup provisioning, or public instructor-registration endpoint. Public registration continues to create students only.
+
+### Optional original demo curriculum
+
+The explicit demo seed contains 8 courses, 21 modules, and 63 short text lessons with explanations, examples, and exercises. All video URLs are null. It requires an **existing active instructor** UUID; it never creates accounts, promotes users, or runs at startup. No schema changes are needed. These are eight additional demo courses, not a limit on the catalog's total size.
+
+After configuring a local development database in `backend/.env` and ensuring the existing migrations are already applied, replace the UUID placeholder and inspect the plan:
+
+```sh
+cd backend
+uv run --locked python -m app.seed_demo_courses --instructor-id "<ACTIVE_INSTRUCTOR_UUID>" --dry-run
+```
+
+The command requires exactly one mode: `--dry-run` reads the selected database without adding, updating, publishing, or committing records; `--apply` explicitly creates and publishes missing demo courses. Both modes reject any `ENVIRONMENT` other than `development`. Check the configured database yourself before any future application; the environment label alone does not prove that a database is disposable. Do not target shared or production data.
+
+Stable UUIDs and reserved `demo-` slugs identify the manifest. An identical, published course and curriculum is skipped. A conflicting slug, renamed seed, changed owner, edited curriculum, or unpublished seed stops preflight without overwriting it. The script never repairs or deletes existing records. Each new complete course is committed through the existing publication service; if a later operation fails, that current course rolls back and earlier completed courses remain. Resolve conflicts deliberately and rerun to resume. PostgreSQL uniqueness constraints reject concurrent duplicate inserts. Publication exposes course summaries and curriculum outlines through the existing catalog; lesson bodies retain their existing protected access.
+
+The seed's focused unit tests use in-memory transaction doubles and never connect to any database:
+
+```sh
+uv run --locked python -m pytest tests/test_demo_seed.py
+```
+
 ## Course management
 
 Management endpoints require a Bearer access token and load the user's current role and active state through the existing authentication dependencies. Instructors can access only their own courses. Admin access is explicitly allowed for management of any course; `/instructor/courses` still lists only the current user's courses, while `/admin/courses` lists all courses. There is no public role-promotion endpoint.

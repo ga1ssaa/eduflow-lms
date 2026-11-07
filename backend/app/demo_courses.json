@@ -1,0 +1,496 @@
+{
+  "courses": [
+    {
+      "title": "Python Fundamentals",
+      "slug": "demo-python-fundamentals",
+      "description": "Learn to describe small problems with variables, decisions, loops, and reusable Python functions.",
+      "category": "Programming",
+      "level": "beginner",
+      "modules": [
+        {
+          "title": "Values and Expressions",
+          "lessons": [
+            {
+              "title": "Names and Values",
+              "content": "Explanation: A variable name refers to a value. Choose names that describe the value's purpose, and assign a new value when that purpose changes.\n\nExample: learner_name = 'Mira'\ncompleted_lessons = 2\ncompleted_lessons = completed_lessons + 1\n\nExercise: Create a course_title and a lesson_count variable. Increase the count by one and print both values.",
+              "video_url": null
+            },
+            {
+              "title": "Numbers and Calculations",
+              "content": "Explanation: Python can combine numbers with arithmetic operators. Parentheses make calculation order explicit, and division produces a floating-point result.\n\nExample: completed = 3\ntotal = 8\npercentage = (completed / total) * 100\nprint(percentage)\n\nExercise: Calculate the total cost of three notebooks at 4.5 each. Explain why multiplying before adding matters when delivery costs 2.",
+              "video_url": null
+            },
+            {
+              "title": "Strings and Formatting",
+              "content": "Explanation: Strings store text. An f-string inserts expressions into a readable message without changing the original values.\n\nExample: name = 'Mira'\nlessons = 3\nmessage = f'{name} completed {lessons} lessons.'\nprint(message)\n\nExercise: Build a sentence containing a course title and its module count using an f-string.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Decisions and Repetition",
+          "lessons": [
+            {
+              "title": "Boolean Decisions",
+              "content": "Explanation: Conditions evaluate to true or false. Use if, elif, and else to select one path; indentation defines the statements belonging to each branch.\n\nExample: score = 72\nif score >= 60:\n    print('Ready for the next lesson')\nelse:\n    print('Review and retry')\n\nExercise: Write a condition that prints 'Complete' when completed equals total and 'Keep learning' otherwise.",
+              "video_url": null
+            },
+            {
+              "title": "Lists and For Loops",
+              "content": "Explanation: A list groups values in order. A for loop visits each value, making repeated work clear without copying the same statement.\n\nExample: topics = ['variables', 'conditions', 'loops']\nfor topic in topics:\n    print(f'Review: {topic}')\n\nExercise: Create a list of three learning goals and print each goal on its own line.",
+              "video_url": null
+            },
+            {
+              "title": "While Loops and Boundaries",
+              "content": "Explanation: A while loop repeats while its condition remains true. Update the condition's inputs so the loop can stop, and check the boundary before starting.\n\nExample: remaining = 3\nwhile remaining > 0:\n    print(remaining)\n    remaining -= 1\n\nExercise: Write a countdown from five to one. Describe what happens if the decrement is removed.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Reusable Programs",
+          "lessons": [
+            {
+              "title": "Functions and Return Values",
+              "content": "Explanation: A function gives a task a name. Parameters provide inputs, while return makes a result available to the caller without requiring a printed message.\n\nExample: def remaining_lessons(total, completed):\n    return max(total - completed, 0)\n\nremaining = remaining_lessons(8, 3)\n\nExercise: Write a function that returns the area of a rectangle and call it with two different inputs.",
+              "video_url": null
+            },
+            {
+              "title": "Dictionaries for Named Data",
+              "content": "Explanation: Dictionaries associate keys with values. They suit small records whose fields have distinct meanings; get can supply a default for an absent key.\n\nExample: course = {'title': 'Python Fundamentals', 'lessons': 9}\nprint(course['title'])\nprint(course.get('category', 'General'))\n\nExercise: Create a learner dictionary containing a name and completed count. Update the count and read an optional nickname safely.",
+              "video_url": null
+            },
+            {
+              "title": "Handling Expected Errors",
+              "content": "Explanation: Some operations fail for ordinary input reasons. Catch the specific exception you can handle and let unrelated failures remain visible.\n\nExample: raw_count = 'nine'\ntry:\n    count = int(raw_count)\nexcept ValueError:\n    print('Enter a whole number')\n\nExercise: Ask for a number and handle invalid numeric text with ValueError. Explain why catching every exception would hide useful information.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Modern React Development",
+      "slug": "demo-modern-react-development",
+      "description": "Build understandable React interfaces using components, state, forms, and deliberate data flow.",
+      "category": "Frontend",
+      "level": "intermediate",
+      "modules": [
+        {
+          "title": "Component Foundations",
+          "lessons": [
+            {
+              "title": "Components and JSX",
+              "content": "Explanation: A component describes a piece of interface. JSX combines markup-like syntax with JavaScript expressions, while component names begin with a capital letter.\n\nExample: function CourseTitle() {\n  return <h2>Interface Foundations</h2>;\n}\n\nExercise: Create a Welcome component that returns a heading and a short paragraph inside one parent element.",
+              "video_url": null
+            },
+            {
+              "title": "Passing Props",
+              "content": "Explanation: Props are inputs supplied by a parent. Treat them as read-only and keep the same component useful with different data.\n\nExample: function LessonLabel({ title, position }) {\n  return <span>{position}. {title}</span>;\n}\n// Usage: <LessonLabel title=\"Components\" position={1} />\n\nExercise: Create a CourseSummary component accepting title and instructorName. Render it twice with different props.",
+              "video_url": null
+            },
+            {
+              "title": "Lists and Stable Keys",
+              "content": "Explanation: Render arrays by mapping records to elements. A stable record identifier helps React preserve the correct item when the list changes.\n\nExample: function LessonList({ lessons }) {\n  return <ul>{lessons.map(lesson => (\n    <li key={lesson.id}>{lesson.title}</li>\n  ))}</ul>;\n}\n\nExercise: Render three lessons with stable IDs. Explain why an array index can identify the wrong item after reordering.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "State and Interaction",
+          "lessons": [
+            {
+              "title": "State and Event Handlers",
+              "content": "Explanation: State stores information that affects rendering. An event handler requests an update; a functional update safely derives the next value from the previous value.\n\nExample: function LessonCounter() {\n  const [count, setCount] = useState(0);\n  return <button onClick={() => setCount(value => value + 1)}>{count}</button>;\n}\n// Import useState from React.\n\nExercise: Build a button that toggles a details panel. Use a boolean state value rather than changing the DOM manually.",
+              "video_url": null
+            },
+            {
+              "title": "Controlled Form Inputs",
+              "content": "Explanation: A controlled input reads its value from state and updates that state on change. A visible label makes the field understandable beyond its placeholder.\n\nExample: const [title, setTitle] = useState('');\n// Inside a component:\n<label>Course title\n  <input value={title} onChange={event => setTitle(event.target.value)} />\n</label>\n\nExercise: Build a form with a controlled course-title input. Prevent submission when the trimmed value is empty.",
+              "video_url": null
+            },
+            {
+              "title": "Sharing State",
+              "content": "Explanation: Place shared state in the nearest common parent. Pass values downward and callbacks upward so several components use one source of truth.\n\nExample: function SearchPage() {\n  const [query, setQuery] = useState('');\n  return <><SearchField value={query} onChange={setQuery} /><Results query={query} /></>;\n}\n\nExercise: Sketch a parent, filter control, and results list. Identify which component should own the selected category.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Reliable Interfaces",
+          "lessons": [
+            {
+              "title": "Effects and Cleanup",
+              "content": "Explanation: Effects synchronize a component with an external system after rendering. Return cleanup for subscriptions so unmounting or changed dependencies do not leave stale listeners.\n\nExample: useEffect(() => {\n  const onResize = () => setWidth(window.innerWidth);\n  window.addEventListener('resize', onResize);\n  return () => window.removeEventListener('resize', onResize);\n}, []);\n// Import useEffect and initialize width state in the component.\n\nExercise: Describe the cleanup needed for a timer. Explain why computing a filtered array usually does not require an effect.",
+              "video_url": null
+            },
+            {
+              "title": "Explicit Loading and Error States",
+              "content": "Explanation: A request-driven screen needs distinct loading, error, empty, and successful states. Keep each message truthful rather than showing a stale count as current.\n\nExample: if (isPending) return <p role=\"status\">Loading courses...</p>;\nif (error) return <button onClick={retry}>Retry loading</button>;\nif (courses.length === 0) return <p>No courses yet.</p>;\nreturn <CourseList courses={courses} />;\n\nExercise: List the four states for a lesson request and write a useful user-facing message for each.",
+              "video_url": null
+            },
+            {
+              "title": "Accessible Component Composition",
+              "content": "Explanation: Prefer native elements for familiar interactions. Buttons provide keyboard activation and disabled behavior, while meaningful text explains the action.\n\nExample: <button type=\"button\" disabled={isSaving} onClick={save}>\n  {isSaving ? 'Saving...' : 'Save lesson'}\n</button>\n\nExercise: Replace a clickable div with a native button. Check its accessible name and how it behaves when focused.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "UI/UX Design Essentials",
+      "slug": "demo-ui-ux-design-essentials",
+      "description": "Practice task-focused interface design, clear hierarchy, accessible interactions, and small usability studies.",
+      "category": "Design",
+      "level": "beginner",
+      "modules": [
+        {
+          "title": "Understanding the Task",
+          "lessons": [
+            {
+              "title": "User Goals Before Screens",
+              "content": "Explanation: A useful interface starts with a task someone wants to complete. Separate the user's goal from a proposed control so you can evaluate several solutions.\n\nExample: Goal: resume the next unfinished lesson.\nPossible support: a clearly labeled Continue Learning action with course context.\n\nExercise: Write a goal for a first-time learner and another for an instructor. Avoid naming interface controls in the goals.",
+              "video_url": null
+            },
+            {
+              "title": "Simple Journey Mapping",
+              "content": "Explanation: A journey describes the steps between intent and outcome. Mark uncertainty and failure points instead of assuming every user follows the ideal path.\n\nExample: Discover course -> inspect curriculum -> sign in -> enroll -> open lesson.\nPotential interruption: the course becomes unpublished before enrollment.\n\nExercise: Map a learner's first course enrollment. Identify one place where clearer feedback would reduce uncertainty.",
+              "video_url": null
+            },
+            {
+              "title": "Content Hierarchy",
+              "content": "Explanation: Hierarchy helps people decide what to read first. Use meaningful headings, grouping, and concise copy before adding decorative emphasis.\n\nExample: Course page order: title and purpose, learning level, curriculum, enrollment action, supporting details.\n\nExercise: Arrange five pieces of course information in reading order and explain the first two choices.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Interface Foundations",
+          "lessons": [
+            {
+              "title": "Spacing and Alignment",
+              "content": "Explanation: Consistent spacing communicates relationships. Nearby items appear related, while larger gaps separate groups; alignment gives the page a predictable reading path.\n\nExample: Use 8px between a label and hint, 16px between fields, and 32px between form groups as a starting scale.\n\nExercise: Inspect a form sketch. Mark which gaps communicate a group and which separate independent tasks.",
+              "video_url": null
+            },
+            {
+              "title": "Color and Contrast",
+              "content": "Explanation: Color can support meaning, but it cannot carry meaning alone. Check foreground/background contrast and pair status colors with text or recognizable symbols.\n\nExample: An invalid field has a clear error message and an error border, rather than a red border by itself.\n\nExercise: Design a completion badge that remains understandable in grayscale. Identify its text and background contrast pair.",
+              "video_url": null
+            },
+            {
+              "title": "Clear Interactive States",
+              "content": "Explanation: Controls should communicate what can be done and what is happening. Include default, hover, focus, disabled, loading, and error behavior where relevant.\n\nExample: A Save button changes to Saving..., prevents repeated submission, and announces a failure without discarding the entered title.\n\nExercise: Describe the states of an enrollment button before, during, and after a failed request.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Testing and Refinement",
+          "lessons": [
+            {
+              "title": "Low-Fidelity Wireframes",
+              "content": "Explanation: A wireframe explores structure without making visual polish the main discussion. Show real labels and plausible content lengths to uncover layout problems early.\n\nExample: Sketch a course editor with a heading, metadata form, curriculum list, and save action using simple rectangles and text.\n\nExercise: Draw two different layouts for the same course-detail task and note the trade-off of each.",
+              "video_url": null
+            },
+            {
+              "title": "Small Usability Sessions",
+              "content": "Explanation: Ask participants to perform a realistic task without explaining the solution. Observe decisions and hesitation, then distinguish observations from your interpretation.\n\nExample: Task: find a beginner course and locate its lesson list.\nObservation: the participant opened three cards before finding the curriculum label.\n\nExercise: Write one neutral task prompt and three observations you would record without guessing the participant's thoughts.",
+              "video_url": null
+            },
+            {
+              "title": "Prioritizing Design Changes",
+              "content": "Explanation: Prioritize problems by task impact and supporting evidence. A confusing primary action usually deserves attention before a decorative inconsistency.\n\nExample: Issue A: enrollment failure has no recovery action.\nIssue B: two decorative icons differ slightly in size.\nFix A first because it blocks task completion.\n\nExercise: Choose one usability issue, propose the smallest correction, and define how you would check whether it helped.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "SQL & PostgreSQL",
+      "slug": "demo-sql-postgresql",
+      "description": "Query relational data, understand keys and joins, and practice safe changes with PostgreSQL transactions.",
+      "category": "Databases",
+      "level": "beginner",
+      "modules": [
+        {
+          "title": "Reading Tables",
+          "lessons": [
+            {
+              "title": "Rows, Columns, and Types",
+              "content": "Explanation: A relational table stores records as rows with named, typed columns. Choose types that describe the values rather than storing every value as arbitrary text.\n\nExample: A lessons table might contain id UUID, title TEXT, position INTEGER, and created_at TIMESTAMPTZ.\n\nExercise: Define suitable column types for a course title, lesson position, and publication date.",
+              "video_url": null
+            },
+            {
+              "title": "Selecting and Filtering",
+              "content": "Explanation: SELECT chooses columns, while WHERE restricts the returned rows. Explicit column names keep a query's output easier to understand.\n\nExample: SELECT title, level\nFROM courses\nWHERE status = 'published' AND level = 'beginner';\n\nExercise: Write a query returning published course titles in the Design category.",
+              "video_url": null
+            },
+            {
+              "title": "Ordering and Limiting",
+              "content": "Explanation: ORDER BY makes result order intentional. Add a unique tie-breaker when values can match, particularly when a page displays only part of the result.\n\nExample: SELECT id, title\nFROM courses\nORDER BY created_at DESC, id ASC\nLIMIT 9;\n\nExercise: Explain why ordering only by a shared creation timestamp can make pagination unstable.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Relationships and Summaries",
+          "lessons": [
+            {
+              "title": "Primary and Foreign Keys",
+              "content": "Explanation: A primary key identifies a row. A foreign key requires a reference to an existing parent and helps prevent disconnected records.\n\nExample: modules.course_id references courses.id.\nA module cannot refer to a course ID that does not exist.\n\nExercise: Draw the course-to-module-to-lesson relationships. Identify the foreign key on each child table.",
+              "video_url": null
+            },
+            {
+              "title": "Joining Related Data",
+              "content": "Explanation: A join combines rows using a relationship. Think about whether you need only matching rows or also parents without children.\n\nExample: SELECT c.title, m.title AS module_title\nFROM courses AS c\nJOIN modules AS m ON m.course_id = c.id;\n\nExercise: Describe how a LEFT JOIN differs when a course has no modules.",
+              "video_url": null
+            },
+            {
+              "title": "Grouping and Counting",
+              "content": "Explanation: Aggregate functions summarize records. GROUP BY defines the groups; count the child key when a left join should include zero-child parents.\n\nExample: SELECT c.id, c.title, COUNT(m.id) AS module_count\nFROM courses AS c\nLEFT JOIN modules AS m ON m.course_id = c.id\nGROUP BY c.id, c.title;\n\nExercise: Write a query counting lessons per module, including modules with no lessons.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Safe Data Changes",
+          "lessons": [
+            {
+              "title": "Inserts and Constraints",
+              "content": "Explanation: Constraints protect data even when several clients write concurrently. A unique slug constraint is stronger than an application-only duplicate check.\n\nExample: INSERT INTO courses (id, instructor_id, title, slug, level, status)\nVALUES (:id, :instructor_id, 'Data Basics', 'data-basics', 'beginner', 'draft');\nThe placeholders must be bound by the database client.\n\nExercise: Identify the constraint needed to prevent two modules sharing one position within a course.",
+              "video_url": null
+            },
+            {
+              "title": "Transactions and Rollback",
+              "content": "Explanation: A transaction groups related changes into a unit. Commit when the complete operation is valid; roll back when any part fails.\n\nExample: BEGIN;\n-- Insert a course and its curriculum.\n-- If validation fails, issue ROLLBACK instead of COMMIT.\n\nExercise: Describe why inserting a module and its lessons in one transaction is safer than committing each incomplete step.",
+              "video_url": null
+            },
+            {
+              "title": "Indexes and Query Plans",
+              "content": "Explanation: An index can speed selected lookups at the cost of storage and write work. Use EXPLAIN to inspect the planned access path instead of assuming every column needs an index.\n\nExample: EXPLAIN SELECT id, title FROM courses WHERE slug = 'data-basics';\n\nExercise: Name a lookup that benefits from a unique slug index and one reason not to index every text field.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "FastAPI Backend Development",
+      "slug": "demo-fastapi-backend-development",
+      "description": "Build small validated APIs with clear responsibilities, database sessions, and server-enforced access rules.",
+      "category": "Backend",
+      "level": "intermediate",
+      "modules": [
+        {
+          "title": "HTTP and Validation",
+          "lessons": [
+            {
+              "title": "Routes and HTTP Methods",
+              "content": "Explanation: A route combines a URL with an HTTP method. Match the method to the operation and make the response contract clear.\n\nExample: from fastapi import FastAPI\napp = FastAPI()\n\n@app.get('/health')\ndef health():\n    return {'status': 'ok'}\n\nExercise: Describe which methods you would use to list courses, create a course, and partially edit its title.",
+              "video_url": null
+            },
+            {
+              "title": "Request Schemas",
+              "content": "Explanation: A request model describes acceptable input. Validation rejects malformed data before the operation reaches persistence, but business rules still belong in the service.\n\nExample: from pydantic import BaseModel, Field\n\nclass CourseInput(BaseModel):\n    title: str = Field(min_length=1, max_length=200)\n\nExercise: Add a level field restricted to beginner, intermediate, or advanced. Decide where a duplicate-slug rule should be checked.",
+              "video_url": null
+            },
+            {
+              "title": "Response Schemas",
+              "content": "Explanation: A response model defines the safe output shape. Avoid returning internal ORM fields simply because they happen to be available.\n\nExample: class CourseSummary(BaseModel):\n    title: str\n    slug: str\n\n@app.get('/example', response_model=CourseSummary)\ndef example():\n    return {'title': 'API Basics', 'slug': 'api-basics'}\n\nExercise: List fields a public user response should include and fields it must never expose.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Database Work",
+          "lessons": [
+            {
+              "title": "Request-Scoped Sessions",
+              "content": "Explanation: A session coordinates database work for an operation. Create it for the request, release it reliably, and keep transaction ownership explicit.\n\nExample: def get_db():\n    with SessionFactory() as session:\n        yield session\n\n# A route can receive it with Depends(get_db).\n\nExercise: Explain why a single mutable session should not be shared by all simultaneous requests.",
+              "video_url": null
+            },
+            {
+              "title": "Service and Repository Responsibilities",
+              "content": "Explanation: Routes translate HTTP concerns, services enforce business rules, and repositories express database queries. Introduce each layer when it has a clear responsibility.\n\nExample: Route: validate a course ID.\nService: verify ownership and publication rules.\nRepository: load the course with its modules.\n\nExercise: Place duplicate-slug handling, a SELECT query, and an HTTP response schema in their appropriate responsibilities.",
+              "video_url": null
+            },
+            {
+              "title": "Atomic Writes",
+              "content": "Explanation: A multi-record operation should not leave an invalid partial result. Flush can surface database constraints without making a change permanent; commit completes the transaction.\n\nExample: try:\n    session.add(course)\n    session.flush()\n    # Validate the complete curriculum.\n    session.commit()\nexcept Exception:\n    session.rollback()\n    raise\n\nExercise: Describe what should remain in the database if the second lesson insert fails during course creation.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Secure and Testable APIs",
+          "lessons": [
+            {
+              "title": "Authentication and Authorization",
+              "content": "Explanation: Authentication identifies the caller; authorization decides whether that caller may perform the action. Check current roles and ownership on the server.\n\nExample: A valid token can identify an instructor, but editing course B must still require ownership of course B or explicit administrator permission.\n\nExercise: Explain why hiding an Edit button is not sufficient to secure a course-update endpoint.",
+              "video_url": null
+            },
+            {
+              "title": "Useful Error Responses",
+              "content": "Explanation: Status codes communicate the outcome consistently. Return safe, actionable messages without exposing SQL text, credentials, or internal stack traces.\n\nExample: Use 404 for an unavailable course, 403 for a forbidden action, 409 for a slug conflict, and 422 for invalid request data.\n\nExercise: Write a duplicate-slug error message that helps an instructor recover without exposing database details.",
+              "video_url": null
+            },
+            {
+              "title": "Focused API Tests",
+              "content": "Explanation: Test observable behavior through the request boundary and isolate persistence from valuable data. Include rejected requests, not just successful ones.\n\nExample: from fastapi.testclient import TestClient\nclient = TestClient(app)\nresponse = client.get('/health')\nassert response.status_code == 200\nassert response.json() == {'status': 'ok'}\n\nExercise: Design one success test and one ownership-rejection test for updating a draft course.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "JavaScript Essentials",
+      "slug": "demo-javascript-essentials",
+      "description": "Understand JavaScript values, functions, collections, and browser events through small practical tasks.",
+      "category": "Programming",
+      "level": "beginner",
+      "modules": [
+        {
+          "title": "Language Building Blocks",
+          "lessons": [
+            {
+              "title": "Values and Bindings",
+              "content": "Explanation: Use const for bindings you do not reassign and let when reassignment is required. Prefer descriptive names; const does not make an object immutable.\n\nExample: const course = { title: 'Web Basics' };\ncourse.title = 'Web Foundations';\nlet completed = 0;\ncompleted += 1;\n\nExercise: Explain why changing course.title is allowed even though course was declared with const.",
+              "video_url": null
+            },
+            {
+              "title": "Conditions and Equality",
+              "content": "Explanation: Conditions choose a branch. Strict equality compares without type coercion, making differences between text and numbers explicit.\n\nExample: const completed = 3;\nconst total = 6;\nif (completed === total) {\n  console.log('Complete');\n} else {\n  console.log('Keep going');\n}\n\nExercise: Compare 3 === '3' and 3 === 3. Write a condition for a non-empty course title.",
+              "video_url": null
+            },
+            {
+              "title": "Functions and Parameters",
+              "content": "Explanation: Functions package a transformation or action. Return values let the caller decide how to use the result.\n\nExample: function progressPercentage(completed, total) {\n  return total === 0 ? 0 : (completed / total) * 100;\n}\n\nExercise: Write a function returning a learner's display label from their name and completed lesson count.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Collections and the Browser",
+          "lessons": [
+            {
+              "title": "Arrays and Transformations",
+              "content": "Explanation: Array methods can create new collections without editing the original. Use map to transform entries and filter to choose entries.\n\nExample: const courses = [{ title: 'Web', level: 'beginner' }, { title: 'APIs', level: 'intermediate' }];\nconst titles = courses.filter(course => course.level === 'beginner').map(course => course.title);\n\nExercise: Filter a list of lessons to completed entries, then produce a list containing only their titles.",
+              "video_url": null
+            },
+            {
+              "title": "Objects and Optional Data",
+              "content": "Explanation: Objects group related properties. Optional chaining reads through a possibly absent value without treating missing data as a successful result.\n\nExample: const instructor = { profile: { fullName: 'Mira Chen' } };\nconst label = instructor.profile?.fullName ?? 'Instructor unavailable';\n\nExercise: Build a course object with an optional category. Display a useful fallback when the category is absent.",
+              "video_url": null
+            },
+            {
+              "title": "DOM Events",
+              "content": "Explanation: Browser events connect user actions to behavior. Use native controls and update text with textContent rather than inserting untrusted markup.\n\nExample: const button = document.querySelector('button');\nconst status = document.querySelector('[role=\"status\"]');\nbutton.addEventListener('click', () => {\n  status.textContent = 'Ready to learn';\n});\n// The page must contain both elements.\n\nExercise: Create a button and status paragraph. Update the paragraph when the button is activated with a mouse or keyboard.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Git & GitHub Workflow",
+      "slug": "demo-git-github-workflow",
+      "description": "Practice small local commits, focused branches, and readable reviews without destructive history shortcuts.",
+      "category": "Tools",
+      "level": "beginner",
+      "modules": [
+        {
+          "title": "Local Version History",
+          "lessons": [
+            {
+              "title": "Inspecting Your Working Tree",
+              "content": "Explanation: Git distinguishes edits, staged changes, and committed history. Inspect the current state before deciding which files belong in a change.\n\nExample: git status --short\ngit diff\n# These commands inspect local changes without publishing them.\n\nExercise: Describe the difference between an unstaged modification and a staged modification.",
+              "video_url": null
+            },
+            {
+              "title": "Focused Commits",
+              "content": "Explanation: A commit records the staged snapshot. Stage specific files and review that snapshot so unrelated edits and secrets do not enter the change.\n\nExample: git add README.md\ngit diff --cached\n# After reviewing the snapshot, create a concise commit when authorized.\n\nExercise: Write a commit message for correcting a lesson title. Explain why reviewing the staged diff matters.",
+              "video_url": null
+            },
+            {
+              "title": "Branches for a Single Task",
+              "content": "Explanation: A branch names a line of work. Keep one task focused so review and integration stay understandable.\n\nExample: git switch -c feat/course-search\n# Work on one change, then inspect git status and git diff.\n\nExercise: Propose a branch name for an enrollment error-message fix and list two unrelated changes that should stay out.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Review and Collaboration",
+          "lessons": [
+            {
+              "title": "Reading a Diff",
+              "content": "Explanation: A diff shows how a proposal changes behavior. Review the result as well as individual lines, including tests and documentation.\n\nExample: git diff --stat\ngit diff -- README.md\n# The first command summarizes scope; the second inspects one file.\n\nExercise: Review a small local diff and identify its purpose, evidence, and any unrelated edits.",
+              "video_url": null
+            },
+            {
+              "title": "Resolving Conflicts Deliberately",
+              "content": "Explanation: A conflict means Git could not combine competing edits automatically. Understand both intentions before choosing the final content; never accept a side blindly.\n\nExample: Conflict markers separate the competing versions. Read both, edit the desired combined result, remove the markers, and review the complete file.\n\nExercise: Describe how you would resolve two changes to the same lesson title without losing an intentional correction.",
+              "video_url": null
+            },
+            {
+              "title": "Preparing a Review",
+              "content": "Explanation: A useful review explains the problem, resulting behavior, and validation. Check repository policy before publishing a branch or opening a pull request.\n\nExample: Review note: Course search now preserves category filters. Validation: focused filter tests pass. Limitation: live API testing is pending.\n\nExercise: Draft a short review description for a course-form fix, including an honest statement of what was tested.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Web Development Foundations",
+      "slug": "demo-web-development-foundations",
+      "description": "Connect semantic HTML, responsive CSS, and browser-server communication to build understandable web pages.",
+      "category": "Web Development",
+      "level": "beginner",
+      "modules": [
+        {
+          "title": "Structure and Presentation",
+          "lessons": [
+            {
+              "title": "Semantic HTML",
+              "content": "Explanation: HTML elements communicate the structure and purpose of content. Prefer headings, landmarks, links, and buttons over generic containers for meaningful tasks.\n\nExample: <main>\n  <h1>Learning journal</h1>\n  <section aria-labelledby=\"goals-title\">\n    <h2 id=\"goals-title\">This week's goals</h2>\n    <p>Complete one lesson and write a reflection.</p>\n  </section>\n</main>\n\nExercise: Outline a course page with one main heading, a curriculum section, and a link to another page.",
+              "video_url": null
+            },
+            {
+              "title": "The CSS Box Model",
+              "content": "Explanation: An element's box includes content, padding, border, and margin. border-box makes declared width include padding and border, simplifying sizing.\n\nExample: * { box-sizing: border-box; }\n.lesson-card { width: 100%; max-width: 32rem; padding: 1rem; border: 1px solid; }\n\nExercise: Draw a card box and label its content, padding, border, and margin. Explain what max-width changes.",
+              "video_url": null
+            },
+            {
+              "title": "Responsive Layouts",
+              "content": "Explanation: Responsive layouts adapt to available space instead of assuming a single device width. Let content wrap and test narrow viewports for overflow.\n\nExample: .courses { display: grid; grid-template-columns: 1fr; gap: 1rem; }\n@media (min-width: 48rem) { .courses { grid-template-columns: repeat(2, minmax(0, 1fr)); } }\n\nExercise: Describe how a two-column course grid should behave at 320px. Identify one long-text overflow risk.",
+              "video_url": null
+            }
+          ]
+        },
+        {
+          "title": "Interaction and Delivery",
+          "lessons": [
+            {
+              "title": "Accessible Forms",
+              "content": "Explanation: A form needs understandable labels, useful validation, and predictable submission. Placeholder text is a hint rather than a replacement for a label.\n\nExample: <label for=\"course-title\">Course title</label>\n<input id=\"course-title\" name=\"title\" required maxlength=\"200\">\n<button type=\"submit\">Save course</button>\n\nExercise: Add a hint associated with an input using aria-describedby and explain when an error message should appear.",
+              "video_url": null
+            },
+            {
+              "title": "Browser and Server Requests",
+              "content": "Explanation: A browser sends HTTP requests and receives responses containing status, headers, and sometimes a body. Handle unsuccessful responses explicitly.\n\nExample: const response = await fetch('/api/v1/health');\nif (!response.ok) throw new Error('Health check unavailable');\nconst result = await response.json();\n// A 204 response has no JSON body and must be handled separately.\n\nExercise: Describe what the interface should show while a request is loading, after an error, and after an empty successful result.",
+              "video_url": null
+            },
+            {
+              "title": "Inspecting a Page",
+              "content": "Explanation: Developer tools help separate markup, styling, and network problems. Inspect evidence before changing code, and test keyboard use as well as pointer use.\n\nExample: For an overflowing card: inspect its computed width, check its parent's layout, then inspect any long unbroken text before choosing a correction.\n\nExercise: Inspect a page at a narrow width, navigate its controls using Tab, and record one concrete improvement.",
+              "video_url": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

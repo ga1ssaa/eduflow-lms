@@ -10,16 +10,30 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.schemas import RegisterRequest
 from app.auth.service import EmailAlreadyRegistered, register_user
+from app.core.config import get_settings
 from app.db.session import get_session_factory
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="EduFlow account administration")
     commands = parser.add_subparsers(dest="command", required=True)
-    create = commands.add_parser("create-admin", help="Create a new administrator account")
-    create.add_argument("--email", required=True)
-    create.add_argument("--full-name", required=True)
+    for command, description in (
+        ("create-admin", "Create a new administrator account"),
+        ("create-instructor", "Create a new instructor account (development only)"),
+    ):
+        create = commands.add_parser(command, help=description)
+        create.add_argument("--email", required=True)
+        create.add_argument("--full-name", required=True)
     args = parser.parse_args()
+    if args.command == "create-instructor":
+        try:
+            environment = get_settings().environment
+        except ValidationError:
+            print("Invalid backend configuration; account creation refused.", file=sys.stderr)
+            return 1
+        if environment != "development":
+            print("create-instructor requires ENVIRONMENT=development.", file=sys.stderr)
+            return 1
     if not sys.stdin.isatty():
         print("An interactive terminal is required for the password prompt.", file=sys.stderr)
         return 1
@@ -45,14 +59,19 @@ def main() -> int:
         return 1
     try:
         with get_session_factory()() as db:
-            register_user(db, payload, role="admin")
+            user = register_user(
+                db, payload, role="instructor" if args.command == "create-instructor" else "admin"
+            )
     except EmailAlreadyRegistered:
         print("Email already registered; existing accounts are never promoted.", file=sys.stderr)
         return 1
     except SQLAlchemyError:
         print("Account creation failed: database unavailable or invalid schema.", file=sys.stderr)
         return 1
-    print("Administrator account created.")
+    if args.command == "create-instructor":
+        print(f"Instructor account created: {user.id}")
+    else:
+        print("Administrator account created.")
     return 0
 
 

@@ -30,7 +30,7 @@ def register_user(
     db: Session,
     payload: RegisterRequest,
     *,
-    role: Literal["student", "admin"] = "student",
+    role: Literal["student", "instructor", "admin"] = "student",
 ) -> User:
     if repository.user_by_email(db, str(payload.email)) is not None:
         raise EmailAlreadyRegistered
