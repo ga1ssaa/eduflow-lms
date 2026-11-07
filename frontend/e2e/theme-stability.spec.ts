@@ -1,7 +1,12 @@
 import { test, expect, type Page } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { chooseTheme } from './theme';
+import {
+  chooseTheme,
+  hasSceneClock,
+  installSceneClock,
+  pauseSceneClock,
+} from './theme';
 import {
   installUiFixtures,
   fixtureCourseId,
@@ -31,6 +36,7 @@ async function openScene(
   destination: 'light' | 'dark',
   width = 1440,
   startY = 0,
+  controlled = false,
 ) {
   await page.setViewportSize({ width, height: 900 });
   await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -38,6 +44,7 @@ async function openScene(
     (saved) => localStorage.setItem('eduflow-theme', saved),
     destination === 'dark' ? 'light' : 'dark',
   );
+  if (controlled) await installSceneClock(page);
   await page.goto('/');
   await expect(page.locator('[data-theme-hero=home]')).toBeVisible();
   await page.evaluate(async () => {
@@ -50,6 +57,7 @@ async function openScene(
   await paint(page);
   const styles = await originalStyles(page);
   await chooseTheme(page, destination);
+  if (controlled) await pauseSceneClock(page);
   await expect(page.locator('[data-theme-scene-atmosphere]')).toHaveCount(1);
   return styles;
 }
@@ -70,16 +78,41 @@ async function state(page: Page) {
       progress: document
         .querySelector<HTMLElement>('[data-theme-hero]')
         ?.style.getPropertyValue('--hero-scene-progress'),
+      boundary: document
+        .querySelector('[data-theme-hero]')!
+        .closest('section')!
+        .nextElementSibling!.getBoundingClientRect().top,
     };
   });
 }
 async function paint(page: Page) {
+  if (hasSceneClock(page)) {
+    await page.clock.runFor(32);
+    return;
+  }
   await page.evaluate(
     () =>
       new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       ),
   );
+}
+async function settleNativeScroll(page: Page) {
+  let lastY = -1;
+  let stableSince = Date.now();
+  await expect
+    .poll(
+      async () => {
+        const y = await page.evaluate(() => scrollY);
+        if (y !== lastY) {
+          lastY = y;
+          stableSince = Date.now();
+        }
+        return Date.now() - stableSince;
+      },
+      { intervals: [30] },
+    )
+    .toBeGreaterThanOrEqual(120);
 }
 for (const destination of ['dark', 'light'] as const) {
   test(`real viewport scroll cancels the active Home ${destination} scene before it can float over later sections`, async ({
@@ -105,9 +138,10 @@ for (const destination of ['dark', 'light'] as const) {
         'data-reveal-state',
         'revealed',
       );
-    await page.screenshot({
-      path: join(directory, `${phase}-home-${destination}-programmatic.png`),
-    });
+    if (process.env.EDUFLOW_CAPTURE_VISUALS === '1')
+      await page.screenshot({
+        path: join(directory, `${phase}-home-${destination}-programmatic.png`),
+      });
     await writeFile(
       join(directory, `${phase}-home-${destination}-programmatic.json`),
       JSON.stringify(
@@ -170,14 +204,14 @@ const methods = [
 ] as const;
 for (const destination of ['dark', 'light'] as const) {
   for (const method of methods) {
-    test(`${method} actual viewport movement cleans ${destination} at five widths`, async ({
+    test(`${method} preserves ${destination} inside Hero and cleans after crossing at five widths`, async ({
       page,
       context,
     }) => {
       test.setTimeout(90_000);
       for (const width of [320, 375, 768, 1024, 1440]) {
         const startY = method === 'wheel-up' || method === 'PageUp' ? 120 : 0;
-        const styles = await openScene(page, destination, width, startY);
+        const styles = await openScene(page, destination, width, startY, true);
         if (['PageDown', 'PageUp', 'Space', 'ArrowDown'].includes(method))
           await page.evaluate(() =>
             (document.activeElement as HTMLElement)?.blur(),
@@ -201,6 +235,8 @@ for (const destination of ['dark', 'light'] as const) {
             await paint(page);
           }
         } else if (method === 'anchor') {
+          // Navigation clicks retain their real actionability/focus behavior.
+          await page.clock.resume();
           const desktop = page.getByRole('navigation', {
             name: 'Main navigation',
           });
@@ -256,7 +292,50 @@ for (const destination of ['dark', 'light'] as const) {
           await page.mouse.up();
         } else await page.keyboard.press(method);
         await expect.poll(() => page.evaluate(() => scrollY)).not.toBe(startY);
+        // Browser keyboard/touch inertia is native, not governed by page.clock.
+        // Settle it before measuring the boundary for a second input gesture.
+        await settleNativeScroll(page);
+        await paint(page);
+        const inside = await state(page);
+        if (inside.boundary > 0) {
+          expect(inside.canvas, JSON.stringify(inside)).toBe(1);
+          expect(inside.fixed).toBe('fixed');
+          expect(inside.active).toBe(
+            destination === 'dark' ? 'sunset' : 'sunrise',
+          );
+          expect(Number(inside.progress)).toBeLessThan(1);
+          if (!['touch', 'scrollbar'].includes(method))
+            expect(
+              await page.evaluate(
+                () =>
+                  document.activeElement ===
+                  (window as unknown as { __focusAtScroll: Element })
+                    .__focusAtScroll,
+              ),
+            ).toBe(true);
+          await page.mouse.move(20, 700);
+          await page.mouse.wheel(0, inside.boundary + 16);
+          await expect
+            .poll(() =>
+              page.evaluate(
+                () =>
+                  document
+                    .querySelector('[data-theme-hero]')!
+                    .closest('section')!
+                    .nextElementSibling!.getBoundingClientRect().top,
+              ),
+            )
+            .toBeLessThanOrEqual(0);
+        } else {
+          // PageDown/Space may cross a shorter desktop Hero in one gesture.
+          // The actual section boundary, not the input type, defines cleanup.
+          expect(inside.canvas, JSON.stringify(inside)).toBe(0);
+          expect(inside.fixed).not.toBe('fixed');
+        }
+        const scrollAtExit = await page.evaluate(() => scrollY);
         const after = await assertScrollCleanup(page, destination, styles);
+        expect(after.boundary).toBeLessThanOrEqual(0);
+        expect(after.scrollY).toBe(scrollAtExit);
         expect(after.scrollY).toBeGreaterThanOrEqual(0);
         if (!['anchor', 'touch', 'scrollbar'].includes(method))
           expect(
@@ -270,12 +349,13 @@ for (const destination of ['dark', 'light'] as const) {
       }
     });
   }
-  test(`after actual handoff, ${destination} cleanup preserves rapid down/up scroll and cannot resurrect an old frame`, async ({
+  test(`after actual handoff, ${destination} survives rapid down/up inside Hero and cancels at the boundary without stale frames`, async ({
     page,
   }) => {
     test.setTimeout(30_000);
     for (const width of [320, 375, 768, 1024, 1440]) {
-      const styles = await openScene(page, destination, width);
+      const styles = await openScene(page, destination, width, 0, true);
+      await page.clock.runFor(1300);
       await expect(page.locator('[data-theme-hero]')).toHaveAttribute(
         'data-hero-phase',
         'incoming',
@@ -287,16 +367,40 @@ for (const destination of ['dark', 'light'] as const) {
       await page.evaluate(() =>
         window.scrollTo({ top: 200, behavior: 'instant' }),
       );
+      await paint(page);
+      const inside = await state(page);
+      expect(inside.scrollY).toBe(200);
+      expect(inside.boundary).toBeGreaterThan(0);
+      expect(inside.canvas).toBe(1);
+      expect(inside.phase).toBe('incoming');
+      await page.mouse.move(20, 700);
+      await page.mouse.wheel(0, inside.boundary + 16);
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () =>
+              document
+                .querySelector('[data-theme-hero]')!
+                .closest('section')!
+                .nextElementSibling!.getBoundingClientRect().top,
+          ),
+        )
+        .toBeLessThanOrEqual(0);
       const after = await assertScrollCleanup(page, destination, styles);
-      expect(after.scrollY).toBe(200);
+      await expect(
+        page.getByRole('button', { name: 'Color theme', exact: true }),
+      ).toBeFocused();
+      const scrollAtExit = after.scrollY;
+      await page.clock.runFor(2800);
+      await expect(page.locator('[data-theme-scene-atmosphere]')).toHaveCount(
+        0,
+      );
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-theme',
+        destination,
+      );
+      expect(await page.evaluate(() => scrollY)).toBe(scrollAtExit);
     }
-    await page.waitForTimeout(2800);
-    await expect(page.locator('[data-theme-scene-atmosphere]')).toHaveCount(0);
-    await expect(page.locator('html')).toHaveAttribute(
-      'data-theme',
-      destination,
-    );
-    expect(await page.evaluate(() => scrollY)).toBe(200);
   });
 }
 

@@ -19,6 +19,19 @@ const time = '2026-11-05T00:00:00Z';
 const uuid = (number: number) =>
   `60000000-0000-4000-8000-${String(number).padStart(12, '0')}`;
 
+const publicSummary = (course: CourseRead): PublicCourseSummary => ({
+  id: course.id,
+  slug: course.slug,
+  title: course.title,
+  description: course.description,
+  category: course.category,
+  level: course.level,
+  instructor_name: course.instructor_name,
+  module_count: course.module_count,
+  lesson_count: course.lesson_count,
+  published_at: course.published_at,
+});
+
 export async function installUiFixtures(
   page: Page,
   role: UiFixtureRole,
@@ -100,18 +113,6 @@ export async function installUiFixtures(
     completed_lessons: completed.get(course.id)!.size,
     progress_percentage: completed.get(course.id)!.size * 50,
     is_completed: completed.get(course.id)!.size === course.lesson_count,
-  });
-  const publicSummary = (course: CourseRead): PublicCourseSummary => ({
-    id: course.id,
-    slug: course.slug,
-    title: course.title,
-    description: course.description,
-    category: course.category,
-    level: course.level,
-    instructor_name: course.instructor_name,
-    module_count: course.module_count,
-    lesson_count: course.lesson_count,
-    published_at: course.published_at,
   });
   const summary = (course: CourseRead): CourseSummary => ({
     ...publicSummary(course),
@@ -318,4 +319,87 @@ export async function installUiFixtures(
     return json({ detail: 'Unmodeled isolated UI fixture route' }, 404);
   });
   return { user, courses, requests, unexpected };
+}
+
+/** Public UI coverage with a known second page; all unmatched APIs stay isolated. */
+export async function installPublicUiFixtures(page: Page) {
+  const fixture = await installUiFixtures(page, 'student');
+  const template = fixture.courses[0];
+  const courses = Array.from(
+    { length: 18 },
+    (_, index): PublicCourseSummary => ({
+      ...publicSummary(template),
+      id: index === 0 ? template.id : uuid(700 + index),
+      slug: index === 0 ? template.slug : `fixture-public-course-${index + 1}`,
+      title:
+        index === 0
+          ? template.title
+          : `[Fixture] Catalog discovery ${index + 1}`,
+    }),
+  );
+  await page.route('**/api/v1/auth/refresh', (route) => {
+    fixture.requests.push({
+      method: route.request().method(),
+      path: '/auth/refresh',
+    });
+    return route.fulfill({
+      status: 401,
+      json: { detail: 'Anonymous isolated UI fixture' },
+    });
+  });
+  await page.route('**/api/v1/courses**', (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    const path = url.pathname.replace('/api/v1', '');
+    if (request.method() !== 'GET' || !/^\/courses(?:\/[^/]+)?$/.test(path))
+      return route.fallback();
+    fixture.requests.push({ method: 'GET', path });
+    if (path !== '/courses') {
+      const course = courses.find((item) => `/courses/${item.slug}` === path);
+      return route.fulfill({
+        status: course ? 200 : 404,
+        json: course
+          ? {
+              ...course,
+              modules: template.modules.map((module) => ({
+                id: module.id,
+                title: module.title,
+                position: module.position,
+                lessons: module.lessons.map((lesson) => ({
+                  id: lesson.id,
+                  title: lesson.title,
+                  position: lesson.position,
+                })),
+              })),
+            }
+          : { detail: 'Isolated public course unavailable' },
+      });
+    }
+    const search = url.searchParams.get('search')?.toLowerCase();
+    const category = url.searchParams.get('category');
+    const level = url.searchParams.get('level');
+    const filtered = courses.filter(
+      (course) =>
+        (!search || course.title.toLowerCase().includes(search)) &&
+        (!category || course.category === category) &&
+        (!level || course.level === level),
+    );
+    const pageNumber = Math.max(1, Number(url.searchParams.get('page') ?? 1));
+    const pageSize = Math.max(
+      1,
+      Number(url.searchParams.get('page_size') ?? 20),
+    );
+    return route.fulfill({
+      json: {
+        items: filtered.slice(
+          (pageNumber - 1) * pageSize,
+          pageNumber * pageSize,
+        ),
+        total: filtered.length,
+        page: pageNumber,
+        page_size: pageSize,
+      },
+    });
+  });
+  return { ...fixture, courses };
 }

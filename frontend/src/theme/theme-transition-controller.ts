@@ -112,7 +112,8 @@ function cancelIfViewportChanged() {
   if (
     (sceneScrollOrigin &&
       (window.scrollX !== sceneScrollOrigin.x ||
-        window.scrollY !== sceneScrollOrigin.y)) ||
+        (window.scrollY !== sceneScrollOrigin.y &&
+          (!hero || !withinHeroSection(hero.element))))) ||
     (sceneViewportSize &&
       (window.innerWidth !== sceneViewportSize.width ||
         window.innerHeight !== sceneViewportSize.height))
@@ -120,6 +121,7 @@ function cancelIfViewportChanged() {
     settleLatest();
     return true;
   }
+  if (sceneScrollOrigin) sceneScrollOrigin.y = window.scrollY;
   return false;
 }
 function onSceneScroll() {
@@ -148,6 +150,23 @@ export function completeThemeTransition(id: number) {
   if (snapshot.scene?.id !== id || generation !== id) return;
   settleLatest();
 }
+function withinHeroSection(element: HTMLElement) {
+  // Use the stationary section, never the fixed, travelling composition.
+  // Its next sibling is the actual content boundary on Home and Explore.
+  const section = element.closest('section') ?? element;
+  const rect = section.getBoundingClientRect();
+  const nextSection = section.nextElementSibling;
+  const boundary = nextSection?.matches('section')
+    ? nextSection.getBoundingClientRect().top
+    : rect.bottom;
+  return (
+    section.isConnected &&
+    rect.width > 0 &&
+    rect.height > 0 &&
+    boundary > 0 &&
+    rect.top < window.innerHeight
+  );
+}
 function visibleHero(registration: ThemeHeroRegistration) {
   const { element } = registration;
   if (!element.isConnected) return false;
@@ -157,8 +176,7 @@ function visibleHero(registration: ThemeHeroRegistration) {
     return (
       rect.width > 0 &&
       rect.height > 0 &&
-      rect.bottom > 0 &&
-      rect.top < window.innerHeight &&
+      withinHeroSection(element) &&
       rect.right > 0 &&
       rect.left < window.innerWidth &&
       style.display !== 'none' &&

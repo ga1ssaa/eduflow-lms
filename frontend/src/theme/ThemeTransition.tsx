@@ -87,6 +87,7 @@ export function ThemeTransition({
         if (!placeholder || !content)
           throw new Error('Hero composition is unavailable');
         const rest = content.getBoundingClientRect();
+        const initialScrollY = window.scrollY;
         const viewport = {
           width: window.innerWidth,
           height: window.innerHeight,
@@ -99,6 +100,21 @@ export function ThemeTransition({
         const sunriseStart = {
           x: -gap - rest.right,
           y: viewport.height + gap - rest.top,
+        };
+        const placeInViewport = (point: Point, opacity: number) => {
+          const scrollDelta = window.scrollY - initialScrollY;
+          content.style.top = `${rest.top - scrollDelta}px`;
+          // The rest anchor follows document flow; the offscreen endpoint stays
+          // at the viewport edge. Convert the unchanged curve between those
+          // anchors, without scaling the Hero or changing its motion timeline.
+          place(
+            content,
+            {
+              x: point.x,
+              y: point.y + scrollDelta * (point.y / exit.y),
+            },
+            opacity,
+          );
         };
         const previousWrapperStyle = placeholder.getAttribute('style');
         const previousCarrierStyle = content.getAttribute('style');
@@ -159,12 +175,12 @@ export function ThemeTransition({
             zIndex: '5',
           });
           placeholder.dataset.heroPhase = 'outgoing';
-          place(content, { x: 0, y: 0 }, 1);
+          placeInViewport({ x: 0, y: 0 }, 1);
           return {
             duration,
             handoffAt,
             prepareHandoff: () => {
-              place(content, exit, 0);
+              placeInViewport(exit, 0);
               const bounds = content.getBoundingClientRect();
               handedOff =
                 bounds.left > window.innerWidth + 24 &&
@@ -180,12 +196,11 @@ export function ThemeTransition({
               if (!handedOff) {
                 placeholder.dataset.heroPhase = 'outgoing';
                 const t = smooth(progress / handoffAt);
-                place(content, bezier(...descendingCurve, t), 1);
+                placeInViewport(bezier(...descendingCurve, t), 1);
               } else {
                 placeholder.dataset.heroPhase = 'incoming';
                 const t = smooth((progress - handoffAt) / (1 - handoffAt));
-                place(
-                  content,
+                placeInViewport(
                   bezier(...incomingCurve, t),
                   Math.min(1, t / 0.12),
                 );

@@ -210,6 +210,70 @@
   opacity: 0.14;
 }
 
+/* Share the same page lighting recipe with the temporary theme-local layers. */
+.product-shell.landing-shell,
+.catalog-shell:has(> .catalog-main),
+[data-scene-theme].theme-scene-atmosphere[data-theme-scene-layer] {
+  --atmosphere-page:
+    radial-gradient(
+      ellipse 100% 1100px at 50% 1000px,
+      #49c3ff80,
+      transparent 85%
+    ),
+    radial-gradient(ellipse 90% 1400px at 0% 42%, #09318d38, transparent 85%),
+    radial-gradient(ellipse 75% 1200px at 100% 62%, #fd91cc48, transparent 85%),
+    radial-gradient(ellipse 85% 1200px at 15% 84%, #49c3ff60, transparent 85%),
+    radial-gradient(ellipse 90% 1000px at 75% 100%, #09318d30, transparent 85%),
+    #fff;
+}
+[data-theme='dark'] .product-shell.landing-shell,
+[data-theme='dark'] .catalog-shell:has(> .catalog-main),
+[data-scene-theme='dark'].theme-scene-atmosphere[data-theme-scene-layer] {
+  --atmosphere-page:
+    radial-gradient(
+      ellipse 100% 1100px at 50% 1000px,
+      #0297de70,
+      transparent 85%
+    ),
+    radial-gradient(ellipse 90% 1400px at 0% 42%, #0297de60, transparent 85%),
+    radial-gradient(ellipse 75% 1200px at 100% 62%, #fc734d58, transparent 85%),
+    radial-gradient(ellipse 85% 1200px at 15% 84%, #0297de60, transparent 85%),
+    radial-gradient(ellipse 90% 1000px at 85% 100%, #fc734d40, transparent 85%),
+    #02070a;
+}
+.product-shell.landing-shell,
+.catalog-shell:has(> .catalog-main) {
+  background: var(--atmosphere-page);
+}
+.catalog-shell .catalog-experience > .catalog-how {
+  background: transparent;
+}
+.product-shell.landing-shell .landing-how,
+.product-shell.landing-shell .site-footer,
+.catalog-shell:has(> .catalog-main) > .site-footer {
+  border-top-color: transparent;
+}
+/* Continue the approved Hero's exact edge colors into that shared field.
+   Only its background is echoed; no Hero content or geometry is duplicated. */
+.product-shell .landing-hero::before,
+.catalog-shell .catalog-hero::before,
+[data-theme-scene-continuation] {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--atmosphere-discovery);
+  transform: translateY(100%) scaleY(-1);
+  mask-image: linear-gradient(to top, #000, transparent 420px);
+}
+/* Keep the continuation behind the next section's readable foreground. */
+.product-shell .landing-featured,
+.catalog-shell .catalog-listing {
+  position: relative;
+  isolation: isolate;
+}
+
 /* Scene-local texture opacity stays independent of the document theme handoff. */
 [data-scene-theme='light'].theme-scene-atmosphere[data-theme-scene-layer]
   .catalog-hero-pixels::before {

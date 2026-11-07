@@ -49,6 +49,9 @@ export function createThemeSceneAtmosphere(
     );
   const catalog = section.classList.contains('catalog-hero');
   const bounds = section.getBoundingClientRect();
+  const pageBounds = shell.getBoundingClientRect();
+  const initialScrollY = window.scrollY;
+  const documentBackgrounds: { element: HTMLElement; top: number }[] = [];
   const staticDecor = section.querySelector<HTMLElement>(
     catalog ? '.catalog-hero-pixels' : '.atmosphere-decoration',
   );
@@ -96,6 +99,31 @@ export function createThemeSceneAtmosphere(
       pointerEvents: 'none',
       background: 'var(--atmosphere-floor)',
     });
+    // Keep the full page's lighting in document space, independently of the
+    // travelling Hero. Its colors use the existing source/destination reveal.
+    const pageBackground = document.createElement('div');
+    pageBackground.dataset.themeScenePage = '';
+    Object.assign(pageBackground.style, {
+      position: 'absolute',
+      left: `${pageBounds.left}px`,
+      top: `${pageBounds.top}px`,
+      width: `${pageBounds.width}px`,
+      height: `${pageBounds.height}px`,
+      background: 'var(--atmosphere-page)',
+    });
+    const continuation = document.createElement('div');
+    continuation.dataset.themeSceneContinuation = '';
+    Object.assign(continuation.style, {
+      left: `${bounds.left}px`,
+      top: `${bounds.top}px`,
+      width: `${bounds.width}px`,
+      height: `${bounds.height}px`,
+      zIndex: '0',
+    });
+    documentBackgrounds.push(
+      { element: pageBackground, top: pageBounds.top },
+      { element: continuation, top: bounds.top },
+    );
     const gradient = document.createElement('div');
     gradient.dataset.themeSceneGradient = '';
     Object.assign(gradient.style, {
@@ -107,6 +135,7 @@ export function createThemeSceneAtmosphere(
       overflow: 'hidden',
       backgroundImage: 'var(--atmosphere-discovery)',
     });
+    documentBackgrounds.push({ element: gradient, top: bounds.top });
     if (staticDecor) {
       const decor = staticDecor.cloneNode(true) as HTMLElement;
       decor.removeAttribute('id');
@@ -134,7 +163,7 @@ export function createThemeSceneAtmosphere(
       });
       gradient.append(rays);
     }
-    layer.append(gradient);
+    layer.append(pageBackground, continuation, gradient);
     canvas.append(layer);
     return layer;
   };
@@ -154,6 +183,10 @@ export function createThemeSceneAtmosphere(
     const reveal = progress * progress * (3 - 2 * progress);
     const angle = scene.direction === 'sunrise' ? 45 : 135;
     const edge = -10 + reveal * 120;
+    const scrollOffset = initialScrollY - window.scrollY;
+    for (const { element, top } of documentBackgrounds) {
+      element.style.top = `${top + scrollOffset}px`;
+    }
     for (const element of [canvas, source, destination]) {
       element.style.setProperty('--theme-scene-progress', String(progress));
       element.style.setProperty('--theme-scene-mask-progress', String(reveal));

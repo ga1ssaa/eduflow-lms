@@ -9,10 +9,13 @@
 .theme-hero-orbit[data-hero-phase] .theme-hero-carrier {
   will-change: transform, opacity;
 }
-/* Fixed content must reach the viewport edges, not be clipped by its original section. */
+/* Keep viewport-based motion, but contain its paint within the stationary Hero.
+   overflow alone does not clip fixed descendants. clip-path does, and follows
+   the section during compositor scrolling without changing fixed geometry. */
 .catalog-hero:has(> .theme-hero-orbit[data-hero-phase]),
 .landing-hero:has(> .theme-hero-orbit[data-hero-phase]) {
   overflow: visible;
+  clip-path: inset(0);
 }
 @media (prefers-reduced-motion: reduce) {
   .theme-hero-orbit[data-hero-phase] .theme-hero-carrier {

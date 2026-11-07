@@ -1,14 +1,19 @@
 import { test, expect, type Page } from '@playwright/test';
 import { chooseTheme } from './theme';
+import {
+  fixtureCourseSlug,
+  installPublicUiFixtures,
+} from './fixtures/atmosphere';
 
-// This suite uses existing public records only. It never registers, logs in,
-// creates fixtures, or changes the database. Authenticated roles are unit-tested.
-let courseSlug: string | undefined;
-test.beforeAll(async ({ request }) => {
-  const response = await request.get('/api/v1/courses?page=1&page_size=1');
-  expect(response.status()).toBe(200);
-  const body = await response.json();
-  courseSlug = body.items[0]?.slug;
+// Isolated anonymous UI data; never authenticate or access a live database.
+const courseSlug = fixtureCourseSlug;
+test.beforeEach(async ({ page }, testInfo) => {
+  await installPublicUiFixtures(page);
+  testInfo.annotations.push({
+    type: 'data-source',
+    description:
+      'Isolated anonymous public API fixtures; no live backend coverage claimed.',
+  });
 });
 
 async function openPublic(page: Page, path: string) {
@@ -39,14 +44,8 @@ test('public routes share one centered three-zone capsule and collapse before co
     '/courses',
     '/login',
     '/register',
-    ...(courseSlug ? [`/courses/${courseSlug}`] : []),
+    `/courses/${courseSlug}`,
   ];
-  if (!courseSlug)
-    test.info().annotations.push({
-      type: 'limitation',
-      description:
-        'The existing API has no published course; real course-detail navbar was unavailable.',
-    });
   const reference = new Map<
     string,
     {
@@ -64,6 +63,7 @@ test('public routes share one centered three-zone capsule and collapse before co
       await page.setViewportSize({ width, height: 900 });
       for (const theme of ['light', 'dark']) {
         await chooseTheme(page, theme);
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
         await page.evaluate(() => window.scrollTo(0, 0));
         const navbar = page.locator('.floating-navbar');
         await expect(navbar).not.toHaveClass(/is-compact/);

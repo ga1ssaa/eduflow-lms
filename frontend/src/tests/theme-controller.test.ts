@@ -102,6 +102,139 @@ afterEach(() => {
 });
 
 describe('one-progress cinematic theme controller', () => {
+  it.each(
+    ['landing-hero', 'catalog-hero'].flatMap((sectionClass) =>
+      ['light', 'dark'].flatMap((destination) =>
+        [50, 150].flatMap((initialScroll) =>
+          [100, 1000].map(
+            (elapsed) =>
+              [sectionClass, destination, initialScroll, elapsed] as const,
+          ),
+        ),
+      ),
+    ),
+  )(
+    '%s to %s from %spx: 2px stays active, crossing the section at %sms cleans up',
+    async (sectionClass, destination, initialScroll, elapsed) => {
+      const theme = await initialize(
+        destination === 'light' ? 'dark' : 'light',
+      );
+      vi.stubGlobal('scrollY', initialScroll);
+      const section = document.createElement('section');
+      section.className = sectionClass;
+      const element = document.createElement('div');
+      const next = document.createElement('section');
+      section.append(element);
+      document.body.append(section, next);
+      vi.spyOn(section, 'getBoundingClientRect').mockImplementation(
+        () => new DOMRect(0, -window.scrollY, 600, 900),
+      );
+      vi.spyOn(next, 'getBoundingClientRect').mockImplementation(
+        () => new DOMRect(0, 900 - window.scrollY, 600, 400),
+      );
+      const rect = vi
+        .spyOn(element, 'getBoundingClientRect')
+        .mockReturnValue(new DOMRect(0, 100 - initialScroll, 600, 600));
+      const cleanup = vi.fn();
+      theme.registerThemeHero({
+        element,
+        start: () => ({
+          render: vi.fn(),
+          cleanup,
+          handoffAt: 0.5,
+          prepareHandoff: () => true,
+        }),
+      });
+      theme.setThemePreference(destination as 'light' | 'dark');
+      const id = theme.getThemeSnapshot().scene!.id;
+      const stale = [...frames.values()][0];
+      await advance(elapsed);
+      // The travelling composition can be offscreen while its section is current.
+      rect.mockReturnValue(new DOMRect(2000, 2000, 600, 600));
+      vi.stubGlobal('scrollY', initialScroll + 2);
+      window.dispatchEvent(new Event('scroll'));
+      await advance(50);
+      expect(theme.getThemeSnapshot().scene?.id).toBe(id);
+      expect(cleanup).not.toHaveBeenCalled();
+      vi.stubGlobal('scrollY', 900);
+      window.dispatchEvent(new Event('scroll'));
+      expect(theme.getThemeSnapshot()).toMatchObject({
+        effective: destination,
+        applied: destination,
+        scene: null,
+      });
+      expect(window.scrollY).toBe(900);
+      expect(cleanup).toHaveBeenCalledTimes(1);
+      expect(frames.size).toBe(0);
+      expect(document.documentElement).not.toHaveAttribute(
+        'data-theme-transition',
+      );
+      stale(5000);
+      window.dispatchEvent(new Event('scroll'));
+      expect(cleanup).toHaveBeenCalledTimes(1);
+      expect(document.documentElement.dataset.theme).toBe(destination);
+    },
+  );
+
+  it.each(
+    ['landing-hero', 'catalog-hero'].flatMap((sectionClass) =>
+      ['light', 'dark'].flatMap((destination) =>
+        [0, 80, 899, 900].map(
+          (initialScroll) =>
+            [sectionClass, destination, initialScroll] as const,
+        ),
+      ),
+    ),
+  )(
+    '%s to %s at scroll %s uses the section boundary, not the composition box',
+    async (sectionClass, destination, initialScroll) => {
+      const theme = await initialize(
+        destination === 'light' ? 'dark' : 'light',
+      );
+      vi.stubGlobal('scrollY', initialScroll);
+      const section = document.createElement('section');
+      section.className = sectionClass;
+      const element = document.createElement('div');
+      const next = document.createElement('section');
+      section.append(element);
+      document.body.append(section, next);
+      vi.spyOn(section, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, -initialScroll, 600, 900),
+      );
+      vi.spyOn(next, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 900 - initialScroll, 600, 400),
+      );
+      vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 100 - initialScroll, 600, 600),
+      );
+      const render = vi.fn(),
+        cleanup = vi.fn();
+      const start = vi.fn(() => ({
+        render,
+        cleanup,
+        handoffAt: 0.5,
+        prepareHandoff: () => true,
+      }));
+      theme.registerThemeHero({ element, start });
+      theme.setThemePreference(destination as 'light' | 'dark');
+      if (initialScroll === 900) {
+        expect(start).not.toHaveBeenCalled();
+        expect(theme.getThemeSnapshot().scene).toBeNull();
+      } else {
+        expect(start).toHaveBeenCalledTimes(1);
+        window.dispatchEvent(new Event('scroll'));
+        await advance(400);
+        expect(theme.getThemeSnapshot().scene).not.toBeNull();
+        expect(cleanup).not.toHaveBeenCalled();
+        await advance(1200);
+        expect(theme.getThemeSnapshot().scene).toBeNull();
+        expect(cleanup).toHaveBeenCalledTimes(1);
+      }
+      expect(window.scrollY).toBe(initialScroll);
+      expect(document.documentElement.dataset.theme).toBe(destination);
+    },
+  );
+
   it.each([
     ['light', true, 'light'],
     ['dark', false, 'dark'],
@@ -373,7 +506,7 @@ describe('one-progress cinematic theme controller', () => {
   });
 
   it.each(['scrollX', 'scrollY'] as const)(
-    'actual viewport %s changes cancel the scene without forcing the user back',
+    '%s movement outside the Hero cancels without forcing the user back',
     async (axis) => {
       const theme = await initialize(),
         registered = hero(theme);
@@ -383,6 +516,8 @@ describe('one-progress cinematic theme controller', () => {
       theme.setThemePreference('dark');
       await advance(100);
       vi.stubGlobal(axis, 500);
+      if (axis === 'scrollY')
+        registered.rect.mockReturnValue(new DOMRect(0, -400, 600, 300));
       window.dispatchEvent(new Event('scroll'));
       expect(window[axis]).toBe(500);
       expect(theme.getThemeSnapshot()).toMatchObject({
@@ -400,7 +535,8 @@ describe('one-progress cinematic theme controller', () => {
     const theme = await initialize(),
       registered = hero(theme);
     theme.setThemePreference('dark');
-    vi.stubGlobal('scrollY', 200);
+    vi.stubGlobal('scrollY', 500);
+    registered.rect.mockReturnValue(new DOMRect(0, -400, 600, 300));
     await advance(50);
     expect(theme.getThemeSnapshot()).toMatchObject({
       applied: 'dark',
@@ -453,6 +589,7 @@ describe('one-progress cinematic theme controller', () => {
     const activeId = [...frames.keys()][0];
     obsolete(1600);
     vi.stubGlobal('scrollY', 350);
+    registered.rect.mockReturnValue(new DOMRect(0, -250, 600, 200));
     window.dispatchEvent(new Event('scroll'));
     expect(cancelAnimationFrame).toHaveBeenCalledWith(activeId);
     expect(frames.size).toBe(0);

@@ -3,6 +3,7 @@ import {
   installUiFixtures,
   fixtureCourseId,
   type UiFixtureRole,
+  installPublicUiFixtures,
 } from './fixtures/atmosphere.ts';
 import { chooseTheme } from './theme';
 
@@ -167,22 +168,16 @@ for (const [role, empty, paths] of [
   });
 }
 
-test('REAL READ-ONLY catalog keeps nine-item pages, appends unique cards and resets all filters', async ({
+test('ISOLATED UI FIXTURE catalog keeps nine-item pages, appends unique cards and resets all filters', async ({
   page,
-  request,
 }) => {
   test.info().annotations.push({
     type: 'data-source',
-    description: 'Real existing API records; no route mocks, seeds or writes.',
+    description:
+      'Isolated public API fixtures exercise real UI pagination and filters; no live backend records or writes.',
   });
-  const initial = await request.get('/api/v1/courses?page=1&page_size=9');
-  expect(initial.status()).toBe(200);
-  const dataset = await initial.json();
-  test.skip(
-    dataset.total <= 9,
-    'Existing published dataset needs more than nine courses to verify pagination.',
-  );
-  const first = dataset.items[0];
+  const fixture = await installPublicUiFixtures(page);
+  const first = fixture.courses[0];
   const pages: number[] = [];
   page.on('request', (request) => {
     const url = new URL(request.url());
@@ -233,18 +228,17 @@ test('REAL READ-ONLY catalog keeps nine-item pages, appends unique cards and res
   expect(url.searchParams.get('category')).toBe(first.category);
   expect(url.searchParams.get('level')).toBe(first.level);
   expect(url.searchParams.has('page')).toBe(false);
+  await expect(page.locator('.catalog-course-card h3 a')).toHaveCount(1);
+  await expect(page.locator('.catalog-course-card h3 a')).toHaveText(
+    first.title,
+  );
+  expect(fixture.unexpected).toEqual([]);
 });
 
-test('REAL READ-ONLY catalog stays visible and manually paginates without IntersectionObserver', async ({
+test('ISOLATED UI FIXTURE catalog stays visible and manually paginates without IntersectionObserver', async ({
   page,
-  request,
 }) => {
-  const response = await request.get('/api/v1/courses?page=1&page_size=9');
-  expect(response.status()).toBe(200);
-  test.skip(
-    (await response.json()).total <= 9,
-    'Existing dataset needs a second page.',
-  );
+  const fixture = await installPublicUiFixtures(page);
   await page.addInitScript(() => {
     Object.defineProperty(window, 'IntersectionObserver', {
       value: undefined,
@@ -262,6 +256,14 @@ test('REAL READ-ONLY catalog stays visible and manually paginates without Inters
     .click();
   await expect(page.locator('.catalog-course-card h3 a')).toHaveCount(18);
   await expect(page.locator('[data-reveal-state="revealing"]')).toHaveCount(0);
+  expect(
+    new Set(
+      await page
+        .locator('.catalog-course-card h3 a')
+        .evaluateAll((links) => links.map((link) => link.getAttribute('href'))),
+    ).size,
+  ).toBe(18);
+  expect(fixture.unexpected).toEqual([]);
 });
 
 test('REAL Home below-fold content animates once with the shared 600ms, 24px entrance', async ({
