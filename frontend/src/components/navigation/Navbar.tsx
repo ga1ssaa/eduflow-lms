@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, matchPath, useLocation } from 'react-router-dom';
 import { ArrowUpRight, ChevronDown, GraduationCap, Menu } from 'lucide-react';
 import { useAuth } from '../../auth/AuthProvider';
 import { ThemeControl } from '../../theme/ThemeControl';
 import { CatalogAnchor } from '../catalog/CatalogAnchor';
+import { useScrollSpy } from '../../hooks/useScrollSpy';
+import { ActiveNavigation } from './ActiveNavigation';
 import './navbar.css';
 
 export function Navbar({
@@ -19,8 +21,16 @@ export function Navbar({
   const [compact, setCompact] = useState(false);
   const [open, setOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
+  const capsuleRef = useRef<HTMLDivElement>(null);
   const accountRef = useRef<HTMLDetailsElement>(null);
   const mobileTrigger = useRef<HTMLButtonElement>(null);
+  const activeSection = useScrollSpy(location.pathname, capsuleRef, !auth.user);
+  const homeActive = activeSection
+    ? activeSection === 'home'
+    : !!matchPath({ path: '/', end: true }, location.pathname);
+  const coursesActive = activeSection
+    ? activeSection === 'courses'
+    : !!matchPath({ path: '/courses', end: false }, location.pathname);
   useEffect(() => {
     const update = () => setCompact(window.scrollY > 24);
     update();
@@ -54,34 +64,51 @@ export function Navbar({
       : auth.user?.role === 'admin'
         ? '/admin'
         : '/instructor';
-  const sectionLink = (hash: `#${string}`, label: string) =>
-    isCatalog ? (
-      <CatalogAnchor hash={hash} onClick={close}>
+  const sectionLink = (hash: `#${string}`, label: string) => {
+    const current = activeSection === hash.slice(1);
+    const props = {
+      className: current ? 'active' : undefined,
+      'aria-current': current ? ('location' as const) : undefined,
+      onClick: close,
+    };
+    return isCatalog ? (
+      <CatalogAnchor hash={hash} {...props}>
         {label}
       </CatalogAnchor>
     ) : (
-      <Link to={`/courses${hash}`} onClick={close}>
+      <Link to={`/courses${hash}`} {...props}>
         {label}
       </Link>
     );
+  };
   const nav = (
     <>
-      <NavLink to="/" end onClick={close}>
+      <Link
+        to="/"
+        className={homeActive ? 'active' : undefined}
+        aria-current={homeActive ? 'page' : undefined}
+        onClick={close}
+      >
         Home
-      </NavLink>
+      </Link>
       {isCatalog ? (
         <CatalogAnchor
           hash="#courses"
-          className="active"
-          aria-current="page"
+          className={coursesActive ? 'active' : undefined}
+          aria-current={coursesActive ? 'page' : undefined}
           onClick={close}
         >
           Explore Courses
         </CatalogAnchor>
       ) : (
-        <NavLink to="/courses" onClick={close}>
+        <Link
+          to="/courses"
+          className={coursesActive ? 'active' : undefined}
+          aria-current={coursesActive ? 'page' : undefined}
+          onClick={close}
+        >
           Explore Courses
-        </NavLink>
+        </Link>
       )}
       {!auth.user ? (
         <>
@@ -120,16 +147,16 @@ export function Navbar({
       ref={headerRef}
       className={`site-header floating-navbar catalog-page-header${compact ? ' is-compact' : ''}`}
     >
-      <div className="header-inner">
+      <div ref={capsuleRef} className="header-inner">
         <Link to="/" className="brand" aria-label="EduFlow home">
           <span className="brand-mark">
             <GraduationCap size={24} aria-hidden="true" />
           </span>
           EduFlow
         </Link>
-        <nav className="desktop-nav" aria-label="Main navigation">
+        <ActiveNavigation className="desktop-nav" aria-label="Main navigation">
           {nav}
-        </nav>
+        </ActiveNavigation>
         <div className="header-actions">
           <ThemeControl />
           {loggingOut ? (
@@ -224,7 +251,7 @@ export function Navbar({
         </div>
       </div>
       {open && (
-        <nav
+        <ActiveNavigation
           className="mobile-nav"
           id="mobile-navigation"
           aria-label="Mobile navigation"
@@ -266,7 +293,7 @@ export function Navbar({
               <ArrowUpRight size={18} aria-hidden="true" />
             </Link>
           )}
-        </nav>
+        </ActiveNavigation>
       )}
     </header>
   );

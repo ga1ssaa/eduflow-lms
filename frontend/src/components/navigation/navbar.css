@@ -99,8 +99,39 @@
 .site-header.floating-navbar .mobile-nav a.active {
   background: #ffffff17;
 }
-.site-header.floating-navbar .desktop-nav a:hover,
-.site-header.floating-navbar .mobile-nav a:hover {
+.site-header.floating-navbar .desktop-nav,
+.site-header.floating-navbar .mobile-nav {
+  position: relative;
+  isolation: isolate;
+}
+.site-header.floating-navbar .nav-active-indicator {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 8px;
+  background: #ffffff17;
+  transition:
+    transform 300ms ease-in-out,
+    width 300ms ease-in-out,
+    height 300ms ease-in-out;
+}
+.site-header.floating-navbar [data-indicator-ready] > .nav-active-indicator {
+  display: block;
+}
+.site-header.floating-navbar [data-indicator-ready] > a.active {
+  background: transparent;
+}
+.site-header.floating-navbar .desktop-nav > a,
+.site-header.floating-navbar .mobile-nav > a,
+.site-header.floating-navbar .mobile-nav > button {
+  position: relative;
+  z-index: 1;
+}
+.site-header.floating-navbar .desktop-nav a:not(.active):hover,
+.site-header.floating-navbar .mobile-nav a:not(.active):hover {
   text-decoration: none;
   background: #ffffff17;
 }
