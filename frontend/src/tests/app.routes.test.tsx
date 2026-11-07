@@ -83,13 +83,13 @@ describe('protected navigation', () => {
     await renderRoute('/learning');
     expect(screen.getByText('Checking your session…')).toBeInTheDocument();
     expect(
-      screen.queryByRole('heading', { name: 'Sign in to EduFlow' }),
+      screen.queryByRole('heading', { name: 'Welcome back.' }),
     ).not.toBeInTheDocument();
     await act(async () => {
       gate.resolve(jsonResponse({ detail: 'Authentication required' }, 401));
     });
     expect(
-      await screen.findByRole('heading', { name: 'Sign in to EduFlow' }),
+      await screen.findByRole('heading', { name: 'Welcome back.' }),
     ).toBeInTheDocument();
   });
 

@@ -39,13 +39,7 @@ test('public routes share one centered three-zone capsule and collapse before co
   page,
 }) => {
   test.setTimeout(120_000);
-  const paths = [
-    '/',
-    '/courses',
-    '/login',
-    '/register',
-    `/courses/${courseSlug}`,
-  ];
+  const paths = ['/', '/courses', `/courses/${courseSlug}`];
   const reference = new Map<
     string,
     {
@@ -217,18 +211,18 @@ test('mobile outside dismissal and the reused theme menu preserve focus and real
   page,
 }) => {
   await page.setViewportSize({ width: 375, height: 900 });
-  await openPublic(page, '/login');
+  await openPublic(page, '/courses');
   const navbar = page.locator('.floating-navbar');
   const toggle = navbar.getByRole('button', {
     name: 'Open navigation',
     exact: true,
   });
   await toggle.click();
-  await page.getByLabel('Email address').click();
+  await page.getByLabel('Search courses').click();
   await expect(
     navbar.getByRole('navigation', { name: 'Mobile navigation' }),
   ).toHaveCount(0);
-  await expect(page.getByLabel('Email address')).toBeFocused();
+  await expect(page.getByLabel('Search courses')).toBeFocused();
   const theme = navbar.getByRole('button', {
     name: 'Color theme',
     exact: true,

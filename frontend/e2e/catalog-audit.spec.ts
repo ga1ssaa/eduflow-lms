@@ -254,7 +254,7 @@ test('catalog anchors, authentication CTAs and real course links resolve without
     .getByRole('link', { name: 'Your instructor workspace', exact: true })
     .click();
   await expect(
-    page.getByRole('heading', { name: 'Sign in to EduFlow', exact: true }),
+    page.getByRole('heading', { name: 'Welcome back.', exact: true }),
   ).toBeVisible();
   await openCatalog(page);
   await page.getByRole('link', { name: 'Get Started', exact: true }).click();
@@ -264,7 +264,7 @@ test('catalog anchors, authentication CTAs and real course links resolve without
   await openCatalog(page);
   await page.getByRole('link', { name: 'Sign in', exact: true }).click();
   await expect(
-    page.getByRole('heading', { name: 'Sign in to EduFlow', exact: true }),
+    page.getByRole('heading', { name: 'Welcome back.', exact: true }),
   ).toBeVisible();
   expect(blockerWarnings).toEqual([]);
 });

@@ -1,10 +1,12 @@
 import '../pages.css';
+import '../auth-pages.css';
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { BookOpen, Eye, EyeOff, ArrowUpRight } from 'lucide-react';
 import { useAuth } from '../auth/AuthProvider';
 import { isApiError } from '../lib/client';
 import { safeReturn } from '../components/ui';
+import { Atmosphere } from '../components/Atmosphere';
 export function AuthPage({ register = false }: { register?: boolean }) {
   const auth = useAuth();
   const [params] = useSearchParams();
@@ -58,160 +60,166 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     );
   return (
     <div className="auth-layout">
-      <section className="auth-intro" data-reveal>
-        <span className="course-icon large">
-          <BookOpen size={32} aria-hidden="true" />
-        </span>
-        <p className="eyebrow">YOUR LEARNING, IN FLOW</p>
-        <h1>
-          {register
-            ? 'A fresh chapter starts here.'
-            : 'Welcome back to your next chapter.'}
-        </h1>
-        <p>
-          One place for your courses, your progress, and the skills you’re
-          building.
-        </p>
+      <section className="auth-intro" aria-labelledby="auth-editorial-title">
+        <Atmosphere className="auth-pixels" />
+        <div className="auth-editorial-copy">
+          <h1 id="auth-editorial-title">
+            Your next chapter.
+            <em>Keep it going.</em>
+          </h1>
+          <p className="auth-editorial-description">
+            One place for your courses, your progress, and the skills you’re
+            building. A little curiosity can take you a long way.
+          </p>
+          <div className="auth-note">
+            <BookOpen size={22} strokeWidth={1.5} aria-hidden="true" />
+            <p>
+              A clear path.
+              <br />
+              <strong>Your own pace.</strong>
+            </p>
+          </div>
+        </div>
         <div className="auth-visual" aria-hidden="true">
           <span />
           <span />
           <span />
           <ArrowUpRight strokeWidth={1} />
         </div>
-        <div className="auth-note">
-          <span className="accent-line" />
-          <p>
-            Small steps.
-            <br />
-            <strong>Lasting progress.</strong>
-          </p>
-        </div>
       </section>
-      <section className="auth-card surface">
-        <p className="auth-form-kicker">
-          {register ? 'YOUR NEXT CHAPTER' : 'YOUR LEARNING SPACE'}
-        </p>
-        <h2 data-reveal>
-          {register ? 'Create your account' : 'Sign in to EduFlow'}
-        </h2>
-        <p className="muted">
-          {register
-            ? 'Start your learning journey with a student account.'
-            : 'Pick up right where you left off.'}
-        </p>
-        <form
-          onSubmit={submit}
-          aria-label={register ? 'Create account' : 'Sign in'}
+      <section className="auth-card" aria-labelledby="auth-form-title">
+        <div
+          className="auth-form-content"
+          onFocusCapture={(event) => {
+            event.currentTarget
+              .getAnimations?.()
+              .forEach((animation) => animation.finish());
+          }}
         >
-          {register && (
+          <h2 id="auth-form-title">
+            {register ? 'Create your account' : 'Welcome back.'}
+          </h2>
+          <p className="muted">
+            {register
+              ? 'Start your learning journey with a student account.'
+              : 'Continue learning right where you left off.'}
+          </p>
+          <form
+            onSubmit={submit}
+            aria-label={register ? 'Create account' : 'Sign in'}
+          >
+            {register && (
+              <label>
+                <span>Full name</span>
+                <input
+                  name="full_name"
+                  autoComplete="name"
+                  required
+                  minLength={2}
+                  maxLength={100}
+                  aria-invalid={!!errors.full_name}
+                  aria-describedby={
+                    errors.full_name ? 'full_name-error' : undefined
+                  }
+                />
+                {errors.full_name && (
+                  <span id="full_name-error" className="field-error">
+                    {errors.full_name}
+                  </span>
+                )}
+              </label>
+            )}
             <label>
-              <span>Full name</span>
+              <span>Email address</span>
               <input
-                name="full_name"
-                autoComplete="name"
+                type="email"
+                name="email"
+                autoComplete="email"
                 required
-                minLength={2}
-                maxLength={100}
-                aria-invalid={!!errors.full_name}
-                aria-describedby={
-                  errors.full_name ? 'full_name-error' : undefined
-                }
+                maxLength={254}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? 'email-error' : undefined}
               />
-              {errors.full_name && (
-                <span id="full_name-error" className="field-error">
-                  {errors.full_name}
+              {errors.email && (
+                <span id="email-error" className="field-error">
+                  {errors.email}
                 </span>
               )}
             </label>
-          )}
-          <label>
-            <span>Email address</span>
-            <input
-              type="email"
-              name="email"
-              autoComplete="email"
-              required
-              maxLength={254}
-              aria-invalid={!!errors.email}
-              aria-describedby={errors.email ? 'email-error' : undefined}
-            />
-            {errors.email && (
-              <span id="email-error" className="field-error">
-                {errors.email}
+            <label>
+              <span>Password</span>
+              <div className="auth-password-control">
+                <input
+                  type={passwordVisible ? 'text' : 'password'}
+                  name="password"
+                  autoComplete={register ? 'new-password' : 'current-password'}
+                  required
+                  minLength={register ? 12 : 1}
+                  maxLength={128}
+                  aria-invalid={!!errors.password}
+                  aria-describedby={
+                    register
+                      ? `password-help${errors.password ? ' password-error' : ''}`
+                      : errors.password
+                        ? 'password-error'
+                        : undefined
+                  }
+                />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  aria-label={
+                    passwordVisible ? 'Hide password' : 'Show password'
+                  }
+                  aria-pressed={passwordVisible}
+                  onClick={() => setPasswordVisible((visible) => !visible)}
+                >
+                  {passwordVisible ? (
+                    <EyeOff size={18} aria-hidden="true" />
+                  ) : (
+                    <Eye size={18} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+              {register && (
+                <span className="field-help" id="password-help">
+                  12–128 characters, with a letter and a non-space number or
+                  symbol.
+                </span>
+              )}
+              <span id="password-error" className="field-error">
+                {errors.password}
               </span>
+            </label>
+            {message && (
+              <p role="alert" className="form-error">
+                {message}
+              </p>
             )}
-          </label>
-          <label>
-            <span>Password</span>
-            <div className="auth-password-control">
-              <input
-                type={passwordVisible ? 'text' : 'password'}
-                name="password"
-                autoComplete={register ? 'new-password' : 'current-password'}
-                required
-                minLength={register ? 12 : 1}
-                maxLength={128}
-                aria-invalid={!!errors.password}
-                aria-describedby={
-                  register
-                    ? `password-help${errors.password ? ' password-error' : ''}`
-                    : errors.password
-                      ? 'password-error'
-                      : undefined
-                }
-              />
-              <button
-                type="button"
-                className="auth-password-toggle"
-                aria-label={passwordVisible ? 'Hide password' : 'Show password'}
-                aria-pressed={passwordVisible}
-                onClick={() => setPasswordVisible((visible) => !visible)}
-              >
-                {passwordVisible ? (
-                  <EyeOff size={18} aria-hidden="true" />
-                ) : (
-                  <Eye size={18} aria-hidden="true" />
-                )}
-              </button>
-            </div>
-            {register && (
-              <span className="field-help" id="password-help">
-                12–128 characters, with a letter and a non-space number or
-                symbol.
-              </span>
-            )}
-            <span id="password-error" className="field-error">
-              {errors.password}
-            </span>
-          </label>
-          {message && (
-            <p role="alert" className="form-error">
-              {message}
-            </p>
-          )}
-          <button
-            className="button primary full-width"
-            disabled={pending}
-            type="submit"
-          >
-            {pending
-              ? register
-                ? 'Creating account…'
-                : 'Signing in…'
-              : register
-                ? 'Create account'
-                : 'Sign in'}
-          </button>
-        </form>
-        <p className="auth-switch">
-          {register ? 'Already have an account? ' : 'New to EduFlow? '}
-          <Link
-            className="text-link"
-            to={`${register ? '/login' : '/register'}?returnTo=${encodeURIComponent(destination)}`}
-          >
-            {register ? 'Sign in' : 'Create an account'}
-          </Link>
-        </p>
+            <button
+              className="button primary full-width"
+              disabled={pending}
+              type="submit"
+            >
+              {pending
+                ? register
+                  ? 'Creating account…'
+                  : 'Signing in…'
+                : register
+                  ? 'Create account'
+                  : 'Sign in'}
+            </button>
+          </form>
+          <p className="auth-switch">
+            {register ? 'Already have an account? ' : 'New to EduFlow? '}
+            <Link
+              className="text-link"
+              to={`${register ? '/login' : '/register'}?returnTo=${encodeURIComponent(destination)}`}
+            >
+              {register ? 'Sign in' : 'Create an account'}
+            </Link>
+          </p>
+        </div>
       </section>
     </div>
   );

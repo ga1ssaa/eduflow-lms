@@ -5,6 +5,7 @@ import { useAuth } from './auth/AuthProvider';
 import type { Role } from './lib/types';
 import { ErrorPanel, Loading } from './components/ui';
 import { Navbar } from './components/navigation/Navbar';
+import { AuthHeader } from './components/navigation/AuthHeader';
 import { CatalogAnchor } from './components/catalog/CatalogAnchor';
 import { CatalogPage, CoursePage } from './pages/Catalog';
 import { LandingPage } from './pages/Landing';
@@ -94,7 +95,8 @@ function Shell() {
   const revealRef = useScrollReveal(location.pathname);
   const isCatalog = location.pathname === '/courses';
   const isLanding = location.pathname === '/';
-  const pageClass = `product-shell ${isLanding ? 'discovery-shell landing-shell' : ['/login', '/register'].includes(location.pathname) ? 'discovery-shell auth-shell' : location.pathname.startsWith('/courses/') ? 'discovery-shell course-detail-shell' : 'workspace-shell'}`;
+  const isAuth = ['/login', '/register'].includes(location.pathname);
+  const pageClass = `product-shell ${isLanding ? 'discovery-shell landing-shell' : isAuth ? 'discovery-shell auth-shell' : location.pathname.startsWith('/courses/') ? 'discovery-shell course-detail-shell' : 'workspace-shell'}`;
   useEffect(() => {
     if (!location.hash) return;
     const target = document.getElementById(location.hash.slice(1));
@@ -151,7 +153,11 @@ function Shell() {
           Skip to content
         </Link>
       )}
-      <Navbar loggingOut={loggingOut} onLogout={() => void logout()} />
+      {isAuth ? (
+        <AuthHeader />
+      ) : (
+        <Navbar loggingOut={loggingOut} onLogout={() => void logout()} />
+      )}
       <main
         ref={revealRef}
         id="main"
@@ -278,28 +284,30 @@ function Shell() {
           />
         </Routes>
       </main>
-      <footer className="site-footer">
-        <span>EduFlow</span>
-        {!isCatalog && (
-          <nav aria-label="Footer navigation">
-            <Link to="/courses">Explore courses</Link>
-            <Link
-              to={
-                auth.user
-                  ? auth.user.role === 'student'
-                    ? '/learning'
-                    : auth.user.role === 'admin'
-                      ? '/admin'
-                      : '/instructor'
-                  : '/login'
-              }
-            >
-              {auth.user ? 'Your workspace' : 'Sign in'}
-            </Link>
-          </nav>
-        )}
-        <span>A clear path to your next skill.</span>
-      </footer>
+      {!isAuth && (
+        <footer className="site-footer">
+          <span>EduFlow</span>
+          {!isCatalog && (
+            <nav aria-label="Footer navigation">
+              <Link to="/courses">Explore courses</Link>
+              <Link
+                to={
+                  auth.user
+                    ? auth.user.role === 'student'
+                      ? '/learning'
+                      : auth.user.role === 'admin'
+                        ? '/admin'
+                        : '/instructor'
+                    : '/login'
+                }
+              >
+                {auth.user ? 'Your workspace' : 'Sign in'}
+              </Link>
+            </nav>
+          )}
+          <span>A clear path to your next skill.</span>
+        </footer>
+      )}
     </CatalogFrame>
   );
 }

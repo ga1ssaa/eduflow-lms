@@ -226,14 +226,10 @@ test('public landing, auth and real course details fit both themes at all suppor
     .getByRole('link', { name: 'Sign in', exact: true })
     .click();
   await expect(
-    page.getByRole('heading', { name: 'Sign in to EduFlow', exact: true }),
+    page.getByRole('heading', { name: 'Welcome back.', exact: true }),
   ).toBeVisible();
   await page
-    .getByRole('button', { name: 'Open navigation', exact: true })
-    .click();
-  await page
-    .getByRole('navigation', { name: 'Mobile navigation' })
-    .getByRole('link', { name: 'Get Started', exact: true })
+    .getByRole('link', { name: 'Create an account', exact: true })
     .click();
   await expect(
     page.getByRole('heading', { name: 'Create your account', exact: true }),

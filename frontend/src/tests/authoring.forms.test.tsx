@@ -58,7 +58,7 @@ describe('course authoring forms', () => {
     confirmation.mockReturnValue(true);
     await userEvent.click(screen.getByRole('button', { name: 'Sign out' }));
     expect(
-      await screen.findByRole('heading', { name: 'Sign in to EduFlow' }),
+      await screen.findByRole('heading', { name: 'Welcome back.' }),
     ).toBeInTheDocument();
     expect(server.writes).toEqual([
       { method: 'POST', path: '/api/v1/auth/logout', body: {} },
