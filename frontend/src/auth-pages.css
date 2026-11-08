@@ -323,15 +323,14 @@
   .product-shell.auth-shell .auth-layout {
     grid-template-columns: minmax(0, 1fr);
     min-height: auto;
-    gap: 24px;
+    gap: 0;
   }
   .auth-shell .auth-card {
     order: -1;
     padding: 16px 0 24px;
   }
   .auth-shell .auth-intro {
-    min-height: 0;
-    padding: 32px;
+    display: none;
   }
   .auth-shell .auth-intro h1 {
     font-size: 36px;
