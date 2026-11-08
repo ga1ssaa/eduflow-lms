@@ -49,6 +49,24 @@ def test_heroku_postgres_url_preserves_ssl_query_parameters():
     )
 
 
+@pytest.mark.parametrize("hostname", ["ep-example.neon.tech", "ep-example-pooler.neon.tech"])
+def test_neon_production_urls_preserve_tls_and_channel_binding(hostname):
+    settings = Settings(
+        _env_file=None,
+        database_url=(
+            f"postgresql://test@{hostname}/eduflow?sslmode=require&channel_binding=require"
+        ),
+        environment="production",
+        refresh_cookie_secure=True,
+        refresh_cookie_samesite="lax",
+        auth_allowed_origins=["https://eduflow.example"],
+        cors_origins=["https://eduflow.example"],
+    )
+    assert str(settings.database_url) == (
+        f"postgresql+psycopg://test@{hostname}/eduflow?sslmode=require&channel_binding=require"
+    )
+
+
 @pytest.mark.parametrize("url", ["sqlite:///test.db", "postgresql+asyncpg://test@localhost/test"])
 def test_settings_reject_unsupported_database_driver(url):
     with pytest.raises(ValidationError, match="DATABASE_URL must use"):

@@ -35,7 +35,76 @@ npm test
 npm run build
 ```
 
-`npm run preview` serves the built app on port 4173. Authentication on that port requires adding its exact origin to the backend allowlist; the normal development workflow uses port 5173. A future production host must serve SPA routes with an `index.html` fallback, proxy `/api/v1` to the API, and use HTTPS with Secure refresh cookies and explicit trusted origins. Nothing is deployed by these commands.
+`npm run preview` serves the built app on port 4173. Authentication on that port requires adding its exact origin to the backend allowlist; the normal development workflow uses port 5173. Hosted deployment uses the same-origin API proxy described below. Nothing is deployed by these commands.
+
+## Planned hosting: Render Free, Neon Free, Vercel Hobby
+
+These files prepare a personal, non-commercial portfolio deployment; they do not create resources. Obtain approval before creating resources, running remote migrations, provisioning accounts, or deploying. Existing local development data is not transferred or changed. Azure and the Finance Dashboard on Heroku are not involved.
+
+### Free-tier limits and runtime
+
+- [Render Free](https://render.com/docs/free): one Docker web service, 512 MB RAM, idle suspension after 15 minutes, approximately one-minute wake-up, ephemeral local files, and 750 workspace-wide instance hours/month. Included build minutes and outbound bandwidth also apply. Free services have no shell access, one-off jobs, or pre-deploy command support. Use Neon, not Render's expiring Free Postgres. See [Render pricing](https://render.com/pricing) for current allowances.
+- [Neon Free](https://neon.com/pricing): currently 100 CU-hours/month/project and 1 GB storage/project; network-transfer limits also apply. Choose the smallest compute and retain automatic suspension. A pooled connection does not make compute or transfer unlimited. Monitor usage in the Neon console.
+- [Vercel Hobby](https://vercel.com/docs/plans/hobby): $0 for personal, non-commercial use within included limits. Use the free `vercel.app` domain and no paid integrations. Stay on Free/Hobby plans, avoid paid upgrades, and monitor each provider's usage dashboard. Suspension or exhausted quotas are possible; this is a demo hosting arrangement, not an uptime guarantee.
+
+`render.yaml` defines only a Free Docker service in Frankfurt, with automatic redeploys disabled. The existing non-root, production-only runtime listens on `0.0.0.0:${PORT:-8000}` (Render supplies `PORT`). No registry, persistent disk, background worker, or Docker image publication is needed; Render builds `backend/Dockerfile` from the repository. Do not override its start command or add migrations to startup.
+
+The Blueprint sets `WEB_CONCURRENCY=1` and `UVICORN_LIMIT_CONCURRENCY=4` in the process environment. Argon2id uses approximately 64 MiB per simultaneous password hash; unrestricted concurrent login/registration is unsafe on 512 MB. The Uvicorn bound limits accepted concurrent connections/tasks and returns 503 under excess load, including potentially during parallel catalog calls. It is a conservative demo setting, not a load-test guarantee or a rate limiter. Confirm actual Render memory and CPU metrics after deployment before increasing it. No password-hashing security parameters are reduced.
+
+Use `/api/v1/health` for Render's liveness check so health polling does not wake Neon continuously. Verify `/api/v1/health/db` separately after migration/deployment. Sleeping services can cause first-request delays, proxy error pages, or transient database failures; retry after wake-up. Vercel's [external proxy timeout](https://vercel.com/docs/limits) is 120 seconds. Do not use artificial keep-alive polling to defeat free-tier suspension.
+
+### Required environment configuration
+
+Set these in Render's environment dashboard; never enter credentials in Git, URLs shared in chat, command arguments, or build logs. `sync: false` values in the Blueprint must be supplied explicitly.
+
+| Variable | Production value |
+| --- | --- |
+| `ENVIRONMENT` | `production` |
+| `DATABASE_URL` | Neon **pooled** PostgreSQL URL, including its TLS parameters |
+| `JWT_SECRET` | Unique random secret of at least 32 non-padding characters, stored privately and kept stable across redeploys |
+| `AUTH_ALLOWED_ORIGINS` | JSON array containing only the actual stable HTTPS frontend origin, e.g. `["https://YOUR-PROJECT.vercel.app"]` |
+| `CORS_ORIGINS` | Same explicit HTTPS origin array; never wildcard or an origin with a trailing slash |
+| `REFRESH_COOKIE_SECURE` | `true` |
+| `REFRESH_COOKIE_SAMESITE` | `lax` (same-origin proxy) |
+| `REFRESH_COOKIE_NAME` | `eduflow_refresh` |
+| `JWT_ISSUER` | `eduflow` |
+| `ACCESS_TOKEN_MINUTES` / `REFRESH_TOKEN_DAYS` | `15` / `7` |
+| `DATABASE_CONNECT_TIMEOUT` | `15` seconds, to allow a sleeping Neon compute to wake |
+| `WEB_CONCURRENCY` / `UVICORN_LIMIT_CONCURRENCY` | `1` / `4`, as above |
+| `PORT` | Supplied by Render; do not replace with localhost or hardcode a different port |
+
+Vercel: Root Directory `frontend`, Node.js **24.x**, framework Vite, build `npm run build`, output `dist`, and public `VITE_API_BASE_URL=/api/v1`. No backend secrets belong in Vercel or `VITE_*`. `EDUFLOW_API_PROXY_TARGET` configures local Vite only and does not configure Vercel.
+
+### Neon TLS, pooling, and migrations
+
+Create a separate empty Neon Free project/database after approval; never point it at the existing development database. Prefer Frankfurt for both services when available. Copy the pooled and direct connection strings privately from Neon's Connect dialog. The application accepts `postgres://`, `postgresql://`, and `postgresql+psycopg://`; settings normalize them to the synchronous psycopg 3 driver and preserve URL query parameters. Keep Neon's `sslmode=require&channel_binding=require` parameters (or a verified stricter TLS configuration); never disable TLS. Password characters must be URL-encoded.
+
+Use the `-pooler` hostname for the application's `DATABASE_URL`. Existing SQLAlchemy `pool_pre_ping` checks stale connections; the default pool has five persistent slots and ten overflow slots per process, opened lazily. The deployment's single worker and bounded request concurrency constrain use. Neon uses PgBouncer transaction pooling and supports driver protocol-level prepared statements; the app does not use SQL `PREPARE`, session advisory locks, or session-local state. See [Neon pooling](https://neon.com/docs/connect/connection-pooling).
+
+For Alembic use the **direct** hostname, not `-pooler`; migrations already use `NullPool` and do not run at startup. Run the following only after verifying and approving the new remote target. In a separate local terminal, load production settings from a private environment file outside the repository using a trusted secret loader, with `DATABASE_URL` set to the **direct** URL. Do not overwrite the root or backend development `.env`. All production validation rules above still apply. From `backend/`:
+
+```sh
+uv sync --locked
+uv run --locked alembic current
+uv run --locked alembic upgrade head
+uv run --locked alembic current
+uv run --locked alembic check
+```
+
+These are future remote database operations, not verification commands to run during preparation. Run migrations once from the intended release before starting that release. Do not use `stamp`, downgrades, resets, or automatic startup migrations. Do not use the pooled Render environment for this maintenance terminal.
+
+### Deployment sequence (approval required)
+
+1. Review and approve the configuration, then separately approve the desired Git publication. No commit or push is performed by preparation. Keep all local data intact.
+2. Select Vercel Hobby and the intended stable `vercel.app` origin without enabling paid add-ons. Do not route visitors or run authentication until the backend proxy and allowlist are ready. Preview deployment origins are not automatically trusted; do not give arbitrary previews production database access.
+3. Create the empty Neon Free project/database, save both TLS URLs in a private secret store, and verify its identity before executing the explicit direct-URL migration commands above. Monitor Free storage, compute, and transfer usage.
+4. Create the Render Free Docker service using `render.yaml` from the approved branch, supply the required environment values, and review the Free plan before confirming creation. Blueprint import starts the initial deployment even with automatic redeploys off. Do not configure a pre-deploy command, disk, paid instance, or Render database. Confirm both health endpoints after startup and note the actual assigned HTTPS `onrender.com` hostname.
+5. Copy `frontend/vercel.json.example` to `frontend/vercel.json` and replace **only** `replace-with-render-host.invalid` with that actual Render hostname. The template intentionally uses a non-routable placeholder; Vercel does not automatically consume `.example` files or interpolate environment variables in this JSON. Review the resulting file before the separately approved frontend deployment. API rewrites precede the SPA fallback, which excludes `/api` so API failures do not become HTML page responses. Static assets remain served normally.
+6. Deploy the approved frontend to Vercel with the settings above. The rewrite preserves `/api/v1`, query strings, methods, and bodies. API response caching is explicitly disabled, including private/auth responses. Keep access tokens in memory and the refresh cookie HttpOnly, host-only, Secure, and scoped to `/api/v1/auth`. Do not add a cookie Domain or strip `Origin`, `Cookie`, `Authorization`, `X-CSRF-Token`, or `Set-Cookie`. Auth POSTs still require the exact frontend `Origin` and `X-CSRF-Token: 1`; never weaken CSRF to make a proxy work.
+7. Through the frontend origin, verify both health endpoints, registration/login, 204 logout, cookie creation/clearing, refresh rotation after reload, authenticated routes, enrollment, progress, and authoring with explicitly approved disposable accounts. Confirm browser cookies belong to the frontend host, API responses are not cached, and upstream failures are handled. Compare direct Render and proxied health responses. Live proxy/cookie behavior remains unverified until this step.
+8. If an initial admin is required, use the existing `python -m app.cli create-admin --email YOUR-ADDRESS --full-name "Your Name"` from a trusted local backend terminal with the privately loaded direct production URL and `ENVIRONMENT=production`, after separate approval. It prompts securely and rejects existing users. Render Free has no interactive shell. Public registration remains student-only. Instructor creation and demo seeding are development-only; do not bypass that guard or point development tools at Neon production. Existing demo courses/accounts are not automatically published or imported. A production instructor/data-import procedure needs separate review before an authoring demo.
+
+No resources, migrations, accounts, database writes, or deployments are performed by adding this configuration.
 
 Optional real-API browser tests use `npm run test:e2e` after `npx playwright install chromium`. They require Vite on port 5173 pointed at a separate API using an isolated `eduflow_test_*` PostgreSQL database. Set `EDUFLOW_E2E_FIXTURE_FILE` to a private JSON file containing `student`, `instructor`, and `admin` accounts (`email`, `password`) plus `course` and `draft` (`id`, `slug`, `title`). The student full name must be `Frontend Student`. The published course needs two ordered text lessons containing `Private lesson 1.` and `Private lesson 2.` respectively; the draft must satisfy publication rules. Keep this file outside Git with mode 0600; never use development or production accounts. The authoring test creates unique courses through the UI, reorders modules/lessons, verifies student learning and statistics, and confirms moderation/deletion safeguards. Tests create and modify isolated records but never reset databases. Without fixtures they explicitly skip. Browser traces/video are disabled to avoid capturing token responses.
 
