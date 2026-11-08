@@ -6,7 +6,6 @@ import {
   ArrowDown,
   BookOpen,
   ChevronDown,
-  Search,
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../auth/AuthProvider';
@@ -19,7 +18,6 @@ import {
   PageHeading,
   usePage,
 } from '../components/ui';
-import type { FormEvent } from 'react';
 import { useCatalogFeed, useCatalogSentinel } from '../hooks/useCatalogFeed';
 import {
   CatalogHero,
@@ -28,11 +26,12 @@ import {
   CatalogSections,
 } from '../components/catalog/CatalogVisuals';
 import '../catalog.css';
-import { SelectControl } from '../components/SelectControl';
+import { CatalogFilters } from '../components/catalog/CatalogFilters';
 import { CatalogAnchor } from '../components/catalog/CatalogAnchor';
+import { Atmosphere } from '../components/Atmosphere';
 
 export function CatalogPage() {
-  const { params, setParams } = usePage();
+  const { params } = usePage();
   const rawLevel = params.get('level');
   const level = ['beginner', 'intermediate', 'advanced'].includes(
     rawLevel ?? '',
@@ -58,16 +57,6 @@ export function CatalogPage() {
     isFetchNextPageError: query.isFetchNextPageError,
     fetchNextPage: loadMore,
   });
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const next = new URLSearchParams();
-    for (const key of ['search', 'category', 'level']) {
-      const value = String(data.get(key) ?? '').trim();
-      if (value) next.set(key, value);
-    }
-    setParams(next);
-  };
   return (
     <div className="catalog-experience">
       <CatalogHero
@@ -94,7 +83,7 @@ export function CatalogPage() {
           </div>
           <p role="status" className="catalog-result-count">
             {hasCurrentCount
-              ? `${total} courses available`
+              ? `${total} ${total === 1 ? 'course' : 'courses'}${filters.search || filters.category || level ? (total === 1 ? ' matches your filters' : ' match your filters') : ' available'}`
               : query.isPaused
                 ? 'Waiting for connection…'
                 : query.isFetching
@@ -104,50 +93,7 @@ export function CatalogPage() {
                     : ''}
           </p>
         </div>
-        <form
-          className="catalog-filter"
-          onSubmit={submit}
-          key={`${filters.search}-${filters.category}-${level}`}
-          aria-label="Filter courses"
-        >
-          <label className="catalog-search">
-            <span>Search courses</span>
-            <div className="catalog-input-icon">
-              <Search size={18} aria-hidden="true" />
-              <input
-                name="search"
-                maxLength={200}
-                defaultValue={filters.search}
-                placeholder="What would you like to learn?"
-              />
-            </div>
-          </label>
-          <label>
-            <span>Category</span>
-            <input
-              name="category"
-              maxLength={100}
-              defaultValue={filters.category}
-              placeholder="Any category"
-            />
-          </label>
-          <label>
-            <span>Level</span>
-            <SelectControl
-              name="level"
-              aria-label="Level"
-              defaultValue={level ?? ''}
-            >
-              <option value="">All levels</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
-            </SelectControl>
-          </label>
-          <button className="button primary" type="submit">
-            Find courses <Search size={16} aria-hidden="true" />
-          </button>
-        </form>
+        <CatalogFilters />
         {query.isPending ? (
           <div aria-label="Loading courses" role="status">
             <span className="sr-only">Finding courses…</span>
@@ -272,15 +218,20 @@ export function CoursePage() {
         ← Back to catalog
       </Link>
       <header className="course-detail-hero">
-        <div>
+        <Atmosphere />
+        <div className="course-detail-introduction">
           <PageHeading eyebrow={c.category || 'COURSE'} title={c.title}>
             <p>{c.description || 'Review the curriculum below.'}</p>
           </PageHeading>
           <div className="course-metadata">
             <Badge>{c.level}</Badge>
-            <span>By {c.instructor_name}</span>
-            <span>{c.module_count} modules</span>
-            <span>{c.lesson_count} lessons</span>
+            <span className="course-detail-instructor">
+              By {c.instructor_name}
+            </span>
+            <span>
+              <BookOpen size={16} aria-hidden="true" />
+              {c.module_count} modules · {c.lesson_count} lessons
+            </span>
           </div>
         </div>
         <div className="course-detail-art" aria-hidden="true">
@@ -292,15 +243,28 @@ export function CoursePage() {
           className="curriculum surface"
           aria-labelledby="course-curriculum-title"
         >
-          <h2 id="course-curriculum-title" data-reveal>
-            What you’ll learn
-          </h2>
+          <div className="course-curriculum-heading" data-reveal>
+            <p className="eyebrow">THE LEARNING PATH</p>
+            <h2 id="course-curriculum-title">What you’ll learn</h2>
+            <p className="muted">
+              {c.module_count} modules · {c.lesson_count} lessons, one step at a
+              time.
+            </p>
+          </div>
           {c.modules.length ? (
             c.modules.map((module) => (
               <details key={module.id} open>
                 <summary>
-                  {module.position}. {module.title}
-                  <span>{module.lessons.length} lessons</span>
+                  <span
+                    className="course-module-number"
+                    aria-label={`Module ${module.position}`}
+                  >
+                    {String(module.position).padStart(2, '0')}
+                  </span>
+                  <span className="course-module-title">{module.title}</span>
+                  <span className="course-module-count">
+                    {module.lessons.length} lessons
+                  </span>
                   <ChevronDown
                     className="curriculum-chevron"
                     size={18}
@@ -308,10 +272,13 @@ export function CoursePage() {
                   />
                 </summary>
                 <ol>
-                  {module.lessons.map((lesson) => (
+                  {module.lessons.map((lesson, index) => (
                     <li key={lesson.id}>
-                      <BookOpen size={16} aria-hidden="true" />
+                      <span className="course-lesson-number" aria-hidden="true">
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
                       <span>{lesson.title}</span>
+                      <BookOpen size={16} aria-hidden="true" />
                     </li>
                   ))}
                 </ol>
@@ -321,11 +288,17 @@ export function CoursePage() {
             <p>The curriculum is currently unavailable.</p>
           )}
         </section>
-        <aside className="enroll-card surface">
+        <aside
+          className="enroll-card surface"
+          aria-labelledby="course-enrollment-title"
+        >
           <span className="course-icon large">
             <GraduationIcon />
           </span>
-          <h2 data-reveal>Your next step starts here</h2>
+          <p className="course-enrollment-kicker">MAKE ROOM FOR CURIOSITY</p>
+          <h2 id="course-enrollment-title" data-reveal>
+            Your next step starts here
+          </h2>
           <p>Enroll to access the lessons and keep track of your progress.</p>
           {auth.status === 'loading' ? (
             <Loading label="Checking your session…" />

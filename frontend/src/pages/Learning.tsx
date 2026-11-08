@@ -87,6 +87,9 @@ export function LearningPage() {
               <BookOpen className="stat-symbol" size={22} aria-hidden="true" />
             </div>
             <strong>{dashboard.data.total_enrolled_courses}</strong>
+            <p className="learning-stat-caption">
+              All courses in your personal library.
+            </p>
           </div>
           <div
             className="stat surface learning-stat"
@@ -98,6 +101,9 @@ export function LearningPage() {
               <Layers3 className="stat-symbol" size={22} aria-hidden="true" />
             </div>
             <strong>{dashboard.data.in_progress_courses}</strong>
+            <p className="learning-stat-caption">
+              Courses with lessons left to explore.
+            </p>
           </div>
           <div
             className="stat surface learning-stat"
@@ -113,6 +119,9 @@ export function LearningPage() {
               />
             </div>
             <strong>{dashboard.data.completed_courses}</strong>
+            <p className="learning-stat-caption">
+              Finished courses you can revisit.
+            </p>
           </div>
         </div>
       )}
@@ -196,6 +205,14 @@ export function LearningPage() {
                     <p className="category-label">{c.category || 'Course'}</p>
                     <h3>{c.title}</h3>
                     <p className="instructor">By {c.instructor_name}</p>
+                    <p className="learning-enrollment-date">
+                      Enrolled{' '}
+                      {new Date(c.enrolled_at).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </p>
                     <Progress
                       completed={c.completed_lessons}
                       total={c.total_lessons}
@@ -290,19 +307,24 @@ export function LessonPage() {
   const index = lessons.findIndex((l) => l.id === selected?.id);
   const video = safeVideo(lesson.data?.video_url);
   return (
-    <>
+    <div className="lesson-experience">
       <Link to="/learning" className="back-link">
         ← My learning
       </Link>
-      <div className="lesson-heading product-player-intro">
-        <div>
+      <header className="lesson-heading product-player-intro">
+        <Atmosphere />
+        <div className="lesson-course-heading">
           <p className="eyebrow">YOUR CLASSROOM</p>
           <h1>{c.title}</h1>
+          <p className="lesson-course-context">
+            {c.modules.length} modules <span aria-hidden="true">·</span>{' '}
+            {c.total_lessons} lessons
+          </p>
         </div>
         <Badge success={c.is_completed}>
           {c.is_completed ? 'Course completed' : 'In progress'}
         </Badge>
-      </div>
+      </header>
       <div className="player-layout">
         <aside className="lesson-sidebar surface">
           <p className="player-sidebar-kicker">YOUR LEARNING PATH</p>
@@ -317,10 +339,11 @@ export function LessonPage() {
             {c.modules.map((m) => (
               <div key={m.id} className="sidebar-module">
                 <h3>
-                  {m.position}. {m.title}
+                  <span className="lesson-module-number">{m.position}.</span>
+                  <span>{m.title}</span>
                 </h3>
                 <ol>
-                  {m.lessons.map((l) => (
+                  {m.lessons.map((l, lessonIndex) => (
                     <li key={l.id}>
                       <button
                         className={`lesson-nav ${l.id === selected?.id ? 'selected' : ''}`}
@@ -329,8 +352,13 @@ export function LessonPage() {
                         }
                         onClick={() => selectLesson(l.id)}
                       >
-                        <BookOpen size={16} aria-hidden="true" />
-                        <span>{l.title}</span>
+                        <span className="lesson-nav-index" aria-hidden="true">
+                          {lessonIndex + 1}
+                        </span>
+                        <span className="lesson-nav-title">{l.title}</span>
+                        {l.id === selected?.id && (
+                          <ArrowRight size={15} aria-hidden="true" />
+                        )}
                         {l.id === selected?.id && lesson.data?.is_completed && (
                           <Check size={16} aria-label="Completed" />
                         )}
@@ -357,10 +385,14 @@ export function LessonPage() {
           ) : (
             <>
               <div className="section-heading">
-                <span className="small muted">
-                  Lesson {index + 1} of {lessons.length} ·{' '}
-                  {lesson.data.module_title}
-                </span>
+                <div className="lesson-position-label">
+                  <span className="lesson-sequence">
+                    Lesson {index + 1} of {lessons.length}
+                  </span>
+                  <span className="lesson-module-context">
+                    {lesson.data.module_title}
+                  </span>
+                </div>
                 {lesson.data.is_completed && <Badge success>Completed</Badge>}
               </div>
               <h2>{lesson.data.title}</h2>
@@ -410,18 +442,32 @@ export function LessonPage() {
               <nav className="lesson-pagination" aria-label="Lesson navigation">
                 <button
                   className="button secondary"
+                  aria-label="Previous lesson"
                   disabled={index <= 0}
                   onClick={() => selectLesson(lessons[index - 1].id)}
                 >
                   <ArrowLeft size={16} aria-hidden="true" />
-                  Previous lesson
+                  <span>
+                    <span className="lesson-navigation-label">
+                      Previous lesson
+                    </span>
+                    <span className="lesson-navigation-title">
+                      {lessons[index - 1]?.title || 'Start of course'}
+                    </span>
+                  </span>
                 </button>
                 <button
                   className="button secondary"
+                  aria-label="Next lesson"
                   disabled={index >= lessons.length - 1}
                   onClick={() => selectLesson(lessons[index + 1].id)}
                 >
-                  Next lesson
+                  <span>
+                    <span className="lesson-navigation-label">Next lesson</span>
+                    <span className="lesson-navigation-title">
+                      {lessons[index + 1]?.title || 'End of course'}
+                    </span>
+                  </span>
                   <ArrowRight size={16} aria-hidden="true" />
                 </button>
               </nav>
@@ -429,6 +475,6 @@ export function LessonPage() {
           )}
         </section>
       </div>
-    </>
+    </div>
   );
 }

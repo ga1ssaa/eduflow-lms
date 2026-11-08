@@ -72,10 +72,12 @@ class Settings(BaseSettings):
     @classmethod
     def use_sync_psycopg(cls, value: object) -> object:
         if isinstance(value, str):
+            if value.startswith("postgres://"):
+                return value.replace("postgres://", "postgresql+psycopg://", 1)
             if value.startswith("postgresql://"):
                 return value.replace("postgresql://", "postgresql+psycopg://", 1)
             if not value.startswith("postgresql+psycopg://"):
-                raise ValueError("DATABASE_URL must use postgresql or postgresql+psycopg")
+                raise ValueError("DATABASE_URL must use postgres, postgresql or postgresql+psycopg")
         return value
 
 

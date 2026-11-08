@@ -10,6 +10,8 @@ RUN uv sync --locked --no-dev
 FROM builder AS test
 RUN uv sync --locked
 COPY tests ./tests
+COPY testutils ./testutils
+COPY Dockerfile ./
 COPY alembic.ini ./
 COPY alembic ./alembic
 CMD ["uv", "run", "--locked", "python", "-m", "pytest", "-p", "no:cacheprovider"]
@@ -23,4 +25,4 @@ COPY --chown=app:app alembic.ini ./
 COPY --chown=app:app alembic ./alembic
 USER app
 EXPOSE 8000
-CMD ["uvicorn", "app.main:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "exec uvicorn app.main:create_app --factory --host 0.0.0.0 --port \"${PORT:-8000}\""]

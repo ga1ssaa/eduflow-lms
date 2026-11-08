@@ -144,7 +144,15 @@ async function auditResponsive(
         name: 'Open navigation',
         exact: true,
       });
-      if (width <= 375) await expect(mobileTrigger).toBeVisible();
+      const authPage = path === '/login' || path === '/register';
+      if (authPage) {
+        await expect(
+          page
+            .getByRole('navigation', { name: 'Authentication navigation' })
+            .getByRole('link', { name: 'Back to Home', exact: true }),
+        ).toHaveAttribute('href', '/');
+        await expect(mobileTrigger).toHaveCount(0);
+      } else if (width <= 375) await expect(mobileTrigger).toBeVisible();
       if (await mobileTrigger.isVisible()) {
         await mobileTrigger.click();
         const mobileNav = page.getByRole('navigation', {
@@ -257,9 +265,7 @@ test('System follows emulated OS preference while explicit choice and Tab focus 
   await page.keyboard.press('Tab');
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(
-    page
-      .getByRole('banner')
-      .getByRole('link', { name: 'Sign in', exact: true }),
+    page.getByRole('textbox', { name: 'Email address', exact: true }),
   ).toBeFocused();
 });
 

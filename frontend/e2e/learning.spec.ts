@@ -5,6 +5,7 @@ import { chooseTheme } from './theme';
 // Supply a private fixture file for a disposable eduflow_test_* database.
 // Never record traces: authentication network responses contain access tokens.
 const fixturePath = process.env.EDUFLOW_E2E_FIXTURE_FILE;
+const captureReview = process.env.EDUFLOW_CAPTURE_REVIEW === 'true';
 type Account = { email: string; password: string };
 type Course = { id: string; slug: string; title: string };
 const fixtures: {
@@ -25,6 +26,14 @@ async function login(page: Page, account: Account) {
   await page.getByLabel(/^Password/).fill(account.password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await expect(page.getByLabel('Account menu')).toBeVisible();
+}
+
+async function expectSignedOut(page: Page) {
+  await expect(page).toHaveURL(/\/login(?:\?|$)/);
+  await expect(
+    page.getByRole('heading', { name: 'Welcome back.', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByLabel('Account menu')).toHaveCount(0);
 }
 
 test('public registration creates a working student session', async ({
@@ -53,7 +62,6 @@ test('catalog, cookie authentication, enrollment and completion use the real API
   const f = fixtures!;
   await page.goto('/courses');
   await page.getByLabel('Search courses').fill(f.course.title);
-  await page.getByRole('button', { name: 'Find courses' }).click();
   await page.locator(`h3 a[href="/courses/${f.course.slug}"]`).click();
   await expect(page).toHaveURL(new RegExp(`/courses/${f.course.slug}$`));
   await expect(
@@ -78,7 +86,11 @@ test('catalog, cookie authentication, enrollment and completion use the real API
     page.getByRole('button', { name: 'Mark as incomplete' }),
   ).toBeVisible();
   await expect(page.getByText('50%', { exact: true })).toBeVisible();
-  await page.screenshot({ path: 'test-results/classroom.png', fullPage: true });
+  if (captureReview)
+    await page.screenshot({
+      path: 'test-results/classroom.png',
+      fullPage: true,
+    });
   await page.reload();
   await expect(
     page.getByRole('button', { name: 'Mark as incomplete' }),
@@ -88,9 +100,11 @@ test('catalog, cookie authentication, enrollment and completion use the real API
   );
   expect(refresh?.httpOnly).toBe(true);
   expect(refresh?.path).toBe('/api/v1/auth');
-  expect(await page.evaluate(() => Object.keys(localStorage))).toEqual([
-    'eduflow-theme',
-  ]);
+  expect(
+    await page.evaluate(() =>
+      Object.keys(localStorage).filter((key) => key !== 'eduflow-theme'),
+    ),
+  ).toEqual([]);
   await page.getByRole('button', { name: 'Mark as incomplete' }).click();
   await expect(page.getByText('0%', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Next lesson' }).click();
@@ -105,11 +119,7 @@ test('catalog, cookie authentication, enrollment and completion use the real API
   const logout = page.waitForResponse((r) => r.url().endsWith('/auth/logout'));
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   expect((await logout).status()).toBe(204);
-  await expect(
-    page
-      .getByRole('banner')
-      .getByRole('link', { name: 'Sign in', exact: true }),
-  ).toBeVisible();
+  await expectSignedOut(page);
   expect(
     (await context.cookies()).some((c) => c.name === 'eduflow_refresh'),
   ).toBe(false);
@@ -126,11 +136,7 @@ test('instructor statistics and admin moderation respect role workspaces', async
   await expect(page).toHaveURL(new RegExp(`/learn/${f.course.id}`));
   await page.getByLabel('Account menu').click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(
-    page
-      .getByRole('banner')
-      .getByRole('link', { name: 'Sign in', exact: true }),
-  ).toBeVisible();
+  await expectSignedOut(page);
   await login(page, f.instructor);
   await page.goto(`/instructor/courses/${f.course.id}`);
   await expect(
@@ -141,11 +147,7 @@ test('instructor statistics and admin moderation respect role workspaces', async
   ).toBeVisible();
   await page.getByLabel('Account menu').click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
-  await expect(
-    page
-      .getByRole('banner')
-      .getByRole('link', { name: 'Sign in', exact: true }),
-  ).toBeVisible();
+  await expectSignedOut(page);
   await login(page, f.admin);
   await page.goto(`/admin/courses/${f.draft.id}`);
   await expect(
@@ -188,16 +190,18 @@ test('light, dark and mobile layouts remain usable', async ({ page }) => {
   await expect(page.locator('.catalog-course-card').first()).toBeVisible();
   await chooseTheme(page, 'light');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await page.screenshot({
-    path: 'test-results/catalog-light.png',
-    fullPage: true,
-  });
+  if (captureReview)
+    await page.screenshot({
+      path: 'test-results/catalog-light.png',
+      fullPage: true,
+    });
   await chooseTheme(page, 'dark');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  await page.screenshot({
-    path: 'test-results/catalog-dark.png',
-    fullPage: true,
-  });
+  if (captureReview)
+    await page.screenshot({
+      path: 'test-results/catalog-dark.png',
+      fullPage: true,
+    });
   await page.setViewportSize({ width: 320, height: 800 });
   expect(
     await page.evaluate(
@@ -209,8 +213,9 @@ test('light, dark and mobile layouts remain usable', async ({ page }) => {
     page.getByRole('navigation', { name: 'Mobile navigation' }),
   ).toBeVisible();
   await page.keyboard.press('Escape');
-  await page.screenshot({
-    path: 'test-results/catalog-mobile.png',
-    fullPage: true,
-  });
+  if (captureReview)
+    await page.screenshot({
+      path: 'test-results/catalog-mobile.png',
+      fullPage: true,
+    });
 });

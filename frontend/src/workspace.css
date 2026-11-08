@@ -1,0 +1,296 @@
+/* Authenticated authoring/moderation only. Approved public pages stay untouched. */
+.management-shell .main-container > * {
+  min-width: 0;
+}
+.management-shell .page-heading h1 {
+  max-width: 28ch;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(32px, 3.5vw, 46px);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -1.3px;
+}
+.management-shell .eyebrow {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: 7px;
+  background: var(--accent-subtle);
+  color: var(--accent-subtle-foreground);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.7px;
+  overflow-wrap: anywhere;
+}
+.management-shell .eyebrow::before {
+  content: none;
+}
+.management-shell .heading-description {
+  max-width: 64ch;
+  font-size: 15px;
+  line-height: 1.8;
+}
+.management-shell .product-page-intro {
+  gap: 28px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid var(--border);
+}
+.management-shell .product-page-intro > div {
+  min-width: 0;
+}
+.management-shell .product-identity {
+  overflow-wrap: anywhere;
+  color: var(--subtle);
+}
+.management-shell .stats-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+.management-shell .stat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 20px 12px;
+  min-width: 0;
+  padding: 24px;
+}
+.management-shell .stat > span {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--subtle);
+  padding-right: 0;
+  font-size: 13px;
+}
+.management-shell .stat .stat-symbol {
+  position: static;
+  grid-column: 2;
+  grid-row: 1;
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  border-radius: 8px;
+  background: var(--soft);
+  color: var(--link);
+}
+.management-shell .stat > strong {
+  grid-column: 1 / -1;
+  font-size: 40px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: -1.4px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.management-shell .overview-note {
+  padding: 16px 20px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--surface);
+  color: var(--subtle);
+  line-height: 1.8;
+}
+.management-shell .filter-bar {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(140px, 1fr) auto;
+  gap: 20px;
+  align-items: end;
+  padding: 24px;
+}
+.management-shell .filter-bar > label {
+  min-width: 0;
+}
+.management-shell .filter-bar > .button {
+  grid-column: -2;
+}
+.management-shell .workspace-course-grid {
+  background: transparent;
+}
+.management-shell .workspace-course-grid .course-row {
+  box-shadow: var(--product-shadow);
+}
+.management-shell .workspace-course-art {
+  min-height: 88px;
+  align-items: center;
+  padding: 20px 24px;
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+}
+.management-shell .workspace-course-art > svg {
+  align-self: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+}
+.management-shell .workspace-course-copy h2 {
+  margin-top: 16px;
+  font-size: 23px;
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+  overflow-wrap: anywhere;
+}
+.management-shell .workspace-course-copy > .muted {
+  line-height: 1.8;
+  font-size: 12px;
+}
+.management-shell .course-actions {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.management-shell .author-form-layout > * {
+  min-width: 0;
+}
+.management-shell .author-form,
+.management-shell .author-module {
+  background: var(--surface-elevated);
+}
+.management-shell .author-form-heading {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 24px;
+}
+.management-shell .author-form-heading > span {
+  background: var(--accent-subtle);
+  color: var(--accent-subtle-foreground);
+  font-variant-numeric: tabular-nums;
+}
+.management-shell .author-field > span:first-child {
+  font-size: 13px;
+  font-weight: 600;
+}
+.management-shell .author-field .field-help {
+  max-width: 64ch;
+  line-height: 1.7;
+}
+.management-shell .authoring-guide h2 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 29px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.management-shell .authoring-guide li {
+  line-height: 1.75;
+}
+.management-shell .author-save-row {
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+.management-shell .author-module-heading h2 {
+  font-size: 24px;
+  line-height: 1.35;
+  letter-spacing: -0.6px;
+}
+.management-shell .author-lesson {
+  background: var(--surface);
+}
+.management-shell .author-lesson-heading {
+  gap: 20px;
+}
+.management-shell .author-lesson-heading h3 {
+  line-height: 1.6;
+}
+.management-shell .icon-button {
+  flex-shrink: 0;
+  background: var(--soft);
+  border-color: var(--border);
+}
+.management-shell .author-add-lesson > summary {
+  padding: 12px 0;
+}
+.management-shell .curriculum details {
+  border-bottom: 1px solid var(--border);
+}
+.management-shell .curriculum summary {
+  padding-inline: 8px;
+  min-height: 64px;
+}
+.management-shell .curriculum summary:focus-visible {
+  outline-offset: -2px;
+}
+.management-shell .preview-lesson {
+  padding: 24px;
+  margin: 0 0 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+.management-shell .preview-lesson .lesson-text {
+  max-width: 68ch;
+}
+.management-shell .product-roster {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.management-shell .product-roster table {
+  font-size: 13px;
+}
+.management-shell .product-roster th,
+.management-shell .product-roster td {
+  padding: 18px 20px;
+  line-height: 1.6;
+}
+.management-shell .product-roster tbody tr:hover {
+  background: var(--soft);
+}
+.management-shell .author-dialog {
+  border-top: 3px solid var(--accent);
+}
+.workspace-shell .feedback,
+.workspace-shell .empty {
+  overflow-wrap: anywhere;
+  border-radius: 12px;
+}
+.workspace-shell .feedback h2,
+.workspace-shell .empty h2 {
+  line-height: 1.35;
+}
+.workspace-shell .loading {
+  min-height: 132px;
+}
+@media (max-width: 800px) {
+  .management-shell .filter-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .management-shell .filter-bar > .button {
+    grid-column: auto;
+  }
+  .management-shell .filter-bar > label:first-child:nth-last-child(3) {
+    grid-column: 1 / -1;
+  }
+  .management-shell .stats-grid {
+    gap: 12px;
+  }
+  .management-shell .stat {
+    padding: 20px 16px;
+  }
+}
+@media (max-width: 540px) {
+  .management-shell .stats-grid,
+  .management-shell .filter-bar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .management-shell .stat > strong {
+    grid-row: 2;
+    font-size: 34px;
+  }
+  .management-shell .filter-bar > .button,
+  .management-shell .course-actions > .button {
+    width: 100%;
+  }
+  .management-shell .author-form,
+  .management-shell .author-module,
+  .management-shell .preview-lesson {
+    padding: 20px;
+  }
+  .management-shell .author-dialog-actions {
+    flex-wrap: wrap;
+  }
+  .management-shell .author-dialog-actions > .button {
+    flex: 1;
+    min-width: 100px;
+  }
+  .management-shell .button {
+    white-space: normal;
+    text-align: center;
+  }
+}

@@ -530,6 +530,24 @@
   background: var(--catalog-primary);
   min-height: 44px;
 }
+.catalog-shell .catalog-filter .catalog-clear-filters {
+  color: var(--catalog-ink);
+  background: var(--catalog-card);
+  border-color: var(--catalog-control-border);
+}
+.catalog-shell .catalog-category-error {
+  color: var(--catalog-ink);
+  font-size: 12px;
+}
+.catalog-shell .catalog-category-error button {
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: 8px;
+  color: inherit;
+  background: transparent;
+  text-decoration: underline;
+}
 .catalog-shell .catalog-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

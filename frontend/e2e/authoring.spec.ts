@@ -29,11 +29,11 @@ async function logout(page: Page) {
   );
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   expect((await revoked).status()).toBe(204);
+  await expect(page).toHaveURL(/\/login(?:\?|$)/);
   await expect(
-    page
-      .getByRole('banner')
-      .getByRole('link', { name: 'Sign in', exact: true }),
+    page.getByRole('heading', { name: 'Welcome back.', exact: true }),
   ).toBeVisible();
+  await expect(page.getByLabel('Account menu')).toHaveCount(0);
 }
 
 async function confirm(page: Page, label: string) {

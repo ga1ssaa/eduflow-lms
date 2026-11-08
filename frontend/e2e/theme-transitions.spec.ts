@@ -665,7 +665,20 @@ test('ISOLATED UI FIXTURE actual catalog orbit preserves focused filter values, 
   await expect(search).toBeVisible();
   await expect(page.locator('.avatar')).toHaveText('FI');
   await expect(page.locator('.catalog-course-card h3 a')).toHaveCount(2);
-  await search.fill('[Fixture] Unsubmitted filter');
+  // Automatic search is approved: settle that request before measuring whether
+  // the theme scene itself causes additional catalog or authentication work.
+  const filtered = page.waitForResponse((response) => {
+    const url = new URL(response.url());
+    return (
+      url.pathname === '/api/v1/courses' &&
+      url.searchParams.get('search') === '[Fixture] Automatic filter'
+    );
+  });
+  await search.fill('[Fixture] Automatic filter');
+  await filtered;
+  await expect(page.locator('.catalog-result-count')).toHaveText(
+    '2 courses match your filters',
+  );
   await search.evaluate((element) => {
     Object.assign(window, { __preservedInput: element });
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -678,7 +691,7 @@ test('ISOLATED UI FIXTURE actual catalog orbit preserves focused filter values, 
     'sunset',
   );
   await expect(search).toBeFocused();
-  await expect(search).toHaveValue('[Fixture] Unsubmitted filter');
+  await expect(search).toHaveValue('[Fixture] Automatic filter');
   expect(
     await search.evaluate(
       (element) =>
@@ -715,7 +728,7 @@ test('head bootstrap resolves saved, invalid and blocked storage preferences wit
     { saved: 'light', os: 'dark', expected: 'dark', blocked: true },
   ] as const) {
     const context = await browser.newContext({
-      baseURL: 'http://127.0.0.1:5173',
+      baseURL: testInfo.project.use.baseURL,
       colorScheme: scenario.os,
     });
     const page = await context.newPage();

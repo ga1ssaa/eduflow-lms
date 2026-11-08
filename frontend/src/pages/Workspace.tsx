@@ -317,7 +317,12 @@ export function ManagementPage({
               <p>Student enrollments will appear here.</p>
             </Empty>
           ) : (
-            <div className="roster surface product-roster">
+            <div
+              className="roster surface product-roster"
+              role="region"
+              aria-label="Learner progress table"
+              tabIndex={0}
+            >
               <table>
                 <caption className="sr-only">
                   Learner progress for {c.title}

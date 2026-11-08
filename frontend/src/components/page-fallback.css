@@ -1,0 +1,43 @@
+.fallback-page {
+  max-width: 760px;
+  margin: 32px auto 64px;
+  padding: clamp(24px, 5vw, 64px);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.fallback-page .fallback-code {
+  display: inline-flex;
+  width: fit-content;
+  padding: 6px 12px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-foreground);
+  font-size: 12px;
+  font-weight: 600;
+}
+.fallback-page .fallback-symbol {
+  display: block;
+  margin: 28px auto;
+  color: var(--link);
+}
+.fallback-page h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 400;
+  font-size: clamp(30px, 4vw, 44px);
+  line-height: 1.15;
+}
+.fallback-page > p {
+  max-width: 48ch;
+  margin: 24px auto 32px;
+  color: var(--subtle);
+  line-height: 1.8;
+}
+.fallback-page .actions {
+  justify-content: center;
+}
+@media (max-width: 540px) {
+  .fallback-page .actions > .button {
+    width: 100%;
+    white-space: normal;
+  }
+}

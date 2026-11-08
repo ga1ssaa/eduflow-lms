@@ -27,19 +27,28 @@
 }
 .learning-page .learning-hero h1 {
   color: var(--learning-hero-text);
-  font-size: clamp(34px, 4.1vw, 52px);
-  line-height: 1.12;
-  font-weight: 500;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(38px, 4.5vw, 60px);
+  line-height: 1.08;
+  font-weight: 400;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
   letter-spacing: -2px;
 }
 .learning-page .learning-hero .eyebrow {
-  color: var(--learning-hero-muted);
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 12px;
+  border-radius: 7px;
+  background: var(--accent);
+  color: var(--accent-foreground);
   font-size: 10px;
-  letter-spacing: 1.7px;
+  letter-spacing: 0.8px;
   margin-bottom: 16px;
 }
 .learning-page .learning-hero .eyebrow::before {
-  background: var(--accent);
+  content: none;
 }
 .learning-page .learning-hero .heading-description {
   color: var(--learning-hero-muted);
@@ -188,8 +197,10 @@
   margin-bottom: 8px;
 }
 .learning-page .learning-library-heading h2 {
-  font-size: 28px;
-  line-height: 1.25;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1.2;
   letter-spacing: -0.8px;
 }
 .learning-page .learning-library-heading .text-link {
@@ -199,6 +210,8 @@
   gap: 24px;
 }
 .learning-page .learning-course-card {
+  min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: 0 4px 20px color-mix(in srgb, var(--primary) 4%, transparent);
 }
@@ -250,7 +263,7 @@
 .learning-page .learning-course-card .instructor {
   margin-top: 0;
   font-size: 12px;
-  margin-bottom: 24px;
+  margin-bottom: 8px;
 }
 .learning-page .learning-course-card .progress-block {
   margin-top: auto;
@@ -367,6 +380,234 @@
 .learning-page .learning-empty-state .button {
   padding-inline: 24px;
 }
+.learning-page .learning-stat-caption {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.learning-page .learning-enrollment-date {
+  margin-bottom: 24px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.learning-page .learning-course-card h3 {
+  overflow-wrap: anywhere;
+}
+.learning-page .learning-library-heading .text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+}
+/* A quieter editorial workspace; lesson content never receives entrance motion. */
+.lesson-experience .product-player-intro {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  padding: 36px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--atmosphere-learning);
+  color: #fff;
+}
+.lesson-experience .lesson-course-heading {
+  position: relative;
+  min-width: 0;
+}
+.lesson-experience .product-player-intro h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(30px, 3.5vw, 44px);
+  font-weight: 400;
+  letter-spacing: -1px;
+  line-height: 1.15;
+}
+.lesson-experience .product-player-intro .eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+.lesson-experience .product-player-intro .eyebrow::before {
+  content: none;
+}
+.lesson-experience .product-player-intro > .badge {
+  flex-shrink: 0;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.lesson-experience .product-player-intro > .badge.success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+.lesson-experience .player-layout > * {
+  min-width: 0;
+}
+.lesson-experience .lesson-sidebar {
+  padding: 28px 16px;
+  background: var(--surface-elevated);
+}
+.lesson-experience .lesson-sidebar > h2 {
+  font-size: 22px;
+  letter-spacing: -0.6px;
+}
+.lesson-experience .player-sidebar-kicker {
+  color: var(--link);
+}
+.lesson-experience .sidebar-module + .sidebar-module {
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.lesson-experience .sidebar-module h3 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.lesson-experience .lesson-module-number {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--link);
+}
+.lesson-experience .lesson-course-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: inherit;
+}
+.lesson-experience .lesson-nav {
+  margin-top: 4px;
+  padding: 12px;
+}
+.lesson-experience .lesson-nav > svg {
+  flex-shrink: 0;
+}
+.lesson-experience .lesson-nav > .lesson-nav-title {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.6;
+}
+.lesson-experience .lesson-nav:hover {
+  background: var(--soft);
+}
+.product-shell .lesson-experience .lesson-nav.selected {
+  background: var(--accent-subtle);
+  border-color: var(--accent-emphasis);
+  box-shadow: inset 3px 0 var(--accent-emphasis);
+}
+.lesson-experience .lesson-nav-index {
+  display: grid;
+  place-items: center;
+  flex: 0 0 24px;
+  width: 24px;
+  min-height: 24px;
+  border-radius: 6px;
+  background: var(--soft);
+  color: var(--subtle);
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.lesson-experience .lesson-nav.selected .lesson-nav-index {
+  background: var(--surface);
+  color: var(--text);
+}
+.lesson-experience .lesson-sidebar nav {
+  scroll-padding-block: 12px;
+  overscroll-behavior: contain;
+}
+.lesson-experience .lesson-content {
+  border-top: 3px solid var(--accent);
+  background: var(--surface-elevated);
+}
+.product-shell .lesson-experience .lesson-content > h2 {
+  max-width: 26ch;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(28px, 3vw, 38px);
+  font-weight: 400;
+  letter-spacing: -0.8px;
+  line-height: 1.2;
+}
+.product-shell .lesson-experience .lesson-content .lesson-text {
+  max-width: 64ch;
+  font-size: 16px;
+  line-height: 1.95;
+  margin: 32px 0 48px;
+}
+.lesson-experience .lesson-content > .section-heading {
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lesson-experience .lesson-position-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 6px;
+}
+.lesson-experience .lesson-sequence {
+  color: var(--link);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+.lesson-experience .lesson-module-context {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.lesson-experience .lesson-pagination {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.lesson-experience .lesson-pagination .button {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  min-width: 0;
+}
+.lesson-experience .lesson-pagination .button > span {
+  display: grid;
+  min-width: 0;
+  gap: 6px;
+}
+.lesson-experience .lesson-pagination .button:last-child {
+  justify-content: space-between;
+}
+.lesson-experience .lesson-navigation-label {
+  font-size: 12px;
+  font-weight: 600;
+}
+.lesson-experience .lesson-navigation-title {
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.lesson-experience .lesson-pagination svg,
+.lesson-experience .completion-row svg {
+  flex-shrink: 0;
+}
+.lesson-experience .video-link {
+  min-width: 0;
+  line-height: 1.6;
+}
+.lesson-experience .video-link svg {
+  flex-shrink: 0;
+}
+.lesson-experience .lesson-pagination .button,
+.lesson-experience .completion-row .button {
+  white-space: normal;
+  text-align: left;
+}
 @media (max-width: 1000px) {
   .learning-page .learning-hero {
     padding: 36px 32px 64px;
@@ -420,6 +661,27 @@
   }
 }
 @media (max-width: 540px) {
+  .lesson-experience .lesson-pagination {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .product-shell .lesson-experience .lesson-content > h2 {
+    font-size: 28px;
+    line-height: 1.25;
+  }
+  .lesson-experience .product-player-intro {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 24px 20px;
+    gap: 20px;
+  }
+  .lesson-experience .lesson-pagination .button,
+  .lesson-experience .completion-row .button {
+    width: 100%;
+  }
+  .learning-page .learning-summary .learning-stat-caption {
+    grid-column: 1 / -1;
+  }
   .learning-page .learning-hero {
     min-height: 0;
     padding: 28px 24px 52px;

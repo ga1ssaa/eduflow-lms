@@ -35,6 +35,20 @@ def test_environment_overrides_dotenv(tmp_path, monkeypatch):
     assert str(settings.database_url) == "postgresql+psycopg://environment@localhost/test"
 
 
+def test_heroku_postgres_url_preserves_ssl_query_parameters():
+    settings = Settings(
+        _env_file=None,
+        database_url=(
+            "postgres://test@database.example.com/eduflow_test_config"
+            "?sslmode=require&connect_timeout=7"
+        ),
+    )
+    assert str(settings.database_url) == (
+        "postgresql+psycopg://test@database.example.com/eduflow_test_config"
+        "?sslmode=require&connect_timeout=7"
+    )
+
+
 @pytest.mark.parametrize("url", ["sqlite:///test.db", "postgresql+asyncpg://test@localhost/test"])
 def test_settings_reject_unsupported_database_driver(url):
     with pytest.raises(ValidationError, match="DATABASE_URL must use"):

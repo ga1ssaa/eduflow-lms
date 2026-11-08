@@ -6,7 +6,6 @@ from uuid import uuid4
 import pytest
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy.engine import make_url
 
 from alembic import command
 from app.auth.models import User
@@ -14,6 +13,7 @@ from app.auth.security import create_access_token, hash_password
 from app.core.config import get_settings
 from app.db.session import get_engine, get_session_factory
 from app.main import create_app
+from testutils.database import guard_test_database_url
 
 
 def clear_course_caches():
@@ -29,11 +29,10 @@ def migrated_course_database():
     database_url = os.environ.get("TEST_DATABASE_URL")
     if not database_url:
         pytest.skip("Set TEST_DATABASE_URL to an isolated eduflow_test_ PostgreSQL database")
-    url = make_url(database_url)
-    if url.drivername not in {"postgresql", "postgresql+psycopg"} or not (
-        url.database and url.database.startswith("eduflow_test_")
-    ):
-        pytest.fail("Course tests require a PostgreSQL database named eduflow_test_*")
+    try:
+        guard_test_database_url(database_url)
+    except ValueError as error:
+        pytest.fail(str(error), pytrace=False)
     with pytest.MonkeyPatch.context() as patch:
         patch.setenv("DATABASE_URL", database_url)
         patch.setenv("JWT_SECRET", secrets.token_urlsafe(48))

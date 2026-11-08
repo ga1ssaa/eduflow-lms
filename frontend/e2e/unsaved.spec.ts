@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { chooseTheme } from './theme';
 
 const path = process.env.EDUFLOW_E2E_FIXTURE_FILE;
+const captureReview = process.env.EDUFLOW_CAPTURE_REVIEW === 'true';
 const fixtures: {
   instructor: { email: string; password: string };
   course: { id: string; title: string };
@@ -39,21 +40,23 @@ test('unsaved curriculum survives cancelled navigation and resets after an appro
   for (const theme of ['light', 'dark']) {
     await chooseTheme(page, theme);
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-    await page.screenshot({
-      path: `test-results/authoring-${theme}.png`,
-      fullPage: true,
-    });
+    if (captureReview)
+      await page.screenshot({
+        path: `test-results/authoring-${theme}.png`,
+        fullPage: true,
+      });
     await page.setViewportSize({ width: 320, height: 900 });
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
     ).toBe(true);
-    await page.screenshot({
-      path: `test-results/authoring-${theme}-mobile.png`,
-      fullPage: true,
-    });
-    await page.setViewportSize({ width: 1280, height: 900 });
+    if (captureReview)
+      await page.screenshot({
+        path: `test-results/authoring-${theme}-mobile.png`,
+        fullPage: true,
+      });
+    await page.setViewportSize({ width: 1440, height: 900 });
   }
 
   await page.getByLabel('New module title').fill('Keep this draft in course A');
@@ -66,7 +69,7 @@ test('unsaved curriculum survives cancelled navigation and resets after an appro
   });
   await page
     .getByRole('navigation', { name: 'Main navigation' })
-    .getByRole('link', { name: 'Catalog' })
+    .getByRole('link', { name: 'Explore Courses', exact: true })
     .click();
   await expect(page).toHaveURL(
     new RegExp(`/courses/${f.course.id}/curriculum$`),

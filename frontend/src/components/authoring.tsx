@@ -86,7 +86,9 @@ export function MutationError({ error }: { error: unknown }) {
       </strong>
       <p>
         {isApiError(error)
-          ? error.message
+          ? error.status >= 500
+            ? 'The service is temporarily unavailable. Please try again shortly.'
+            : error.message
           : 'Check your connection and try again.'}
       </p>
       {isApiError(error) && error.status === 409 && (

@@ -1,9 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
-import { BookOpen } from 'lucide-react';
 import { useAuth } from './auth/AuthProvider';
 import type { Role } from './lib/types';
 import { ErrorPanel, Loading } from './components/ui';
+import { PageErrorBoundary, PageFallback } from './components/PageFallback';
 import { Navbar } from './components/navigation/Navbar';
 import { AuthHeader } from './components/navigation/AuthHeader';
 import { CatalogAnchor } from './components/catalog/CatalogAnchor';
@@ -23,6 +23,7 @@ import './styles.css';
 import './product.css';
 import './atmosphere.css';
 import './reveal.css';
+import './workspace.css';
 import { useScrollReveal } from './hooks/useScrollReveal';
 
 function Protected({
@@ -50,28 +51,7 @@ function Protected({
         replace
       />
     );
-  if (!roles.includes(auth.user.role))
-    return (
-      <section className="empty">
-        <h1>This page is for a different role</h1>
-        <p>
-          You are signed in as {auth.user.role}. Choose your workspace to
-          continue.
-        </p>
-        <Link
-          className="button primary"
-          to={
-            auth.user.role === 'student'
-              ? '/learning'
-              : auth.user.role === 'admin'
-                ? '/admin'
-                : '/instructor'
-          }
-        >
-          Go to my workspace
-        </Link>
-      </section>
-    );
+  if (!roles.includes(auth.user.role)) return <PageFallback kind="forbidden" />;
   return children;
 }
 function CatalogFrame({
@@ -96,7 +76,7 @@ function Shell() {
   const isCatalog = location.pathname === '/courses';
   const isLanding = location.pathname === '/';
   const isAuth = ['/login', '/register'].includes(location.pathname);
-  const pageClass = `product-shell ${isLanding ? 'discovery-shell landing-shell' : isAuth ? 'discovery-shell auth-shell' : location.pathname.startsWith('/courses/') ? 'discovery-shell course-detail-shell' : 'workspace-shell'}`;
+  const pageClass = `product-shell ${isLanding ? 'discovery-shell landing-shell' : isAuth ? 'discovery-shell auth-shell' : location.pathname.startsWith('/courses/') ? 'discovery-shell course-detail-shell' : `workspace-shell${/^\/(instructor|admin)(?:\/|$)/.test(location.pathname) ? ' management-shell' : ''}`}`;
   useEffect(() => {
     if (!location.hash) return;
     const target = document.getElementById(location.hash.slice(1));
@@ -167,122 +147,112 @@ function Shell() {
         {logoutError != null && (
           <ErrorPanel error={logoutError} retry={() => void logout()} />
         )}
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/courses" element={<CatalogPage />} />
-          <Route path="/courses/:slug" element={<CoursePage />} />
-          <Route path="/login" element={<AuthPage />} />
-          <Route path="/register" element={<AuthPage register />} />
-          <Route
-            path="/learning"
-            element={
-              <Protected roles={['student']}>
-                <LearningPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/learn/:courseId"
-            element={
-              <Protected roles={['student']}>
-                <LessonPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <OverviewPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor/courses/new"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <CourseEditorPage create />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor/courses/:courseId/edit"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <CourseEditorPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor/courses/:courseId/curriculum"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <CurriculumPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor/courses/:courseId/students"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <ManagementPage studentsOnly />
-              </Protected>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <Protected roles={['admin']}>
-                <OverviewPage admin />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor/courses"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <WorkspacePage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/instructor/courses/:courseId"
-            element={
-              <Protected roles={['instructor', 'admin']}>
-                <ManagementPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/admin/courses"
-            element={
-              <Protected roles={['admin']}>
-                <WorkspacePage admin />
-              </Protected>
-            }
-          />
-          <Route
-            path="/admin/courses/:courseId"
-            element={
-              <Protected roles={['admin']}>
-                <ManagementPage admin />
-              </Protected>
-            }
-          />
-          <Route
-            path="*"
-            element={
-              <section className="empty">
-                <BookOpen aria-hidden="true" />
-                <h1>Page not found</h1>
-                <p>Let’s get you back to learning.</p>
-                <Link className="button primary" to="/courses">
-                  Browse courses
-                </Link>
-              </section>
-            }
-          />
-        </Routes>
+        <PageErrorBoundary key={location.pathname}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/courses" element={<CatalogPage />} />
+            <Route path="/courses/:slug" element={<CoursePage />} />
+            <Route path="/login" element={<AuthPage />} />
+            <Route path="/register" element={<AuthPage register />} />
+            <Route
+              path="/learning"
+              element={
+                <Protected roles={['student']}>
+                  <LearningPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/learn/:courseId"
+              element={
+                <Protected roles={['student']}>
+                  <LessonPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <OverviewPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor/courses/new"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <CourseEditorPage create />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor/courses/:courseId/edit"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <CourseEditorPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor/courses/:courseId/curriculum"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <CurriculumPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor/courses/:courseId/students"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <ManagementPage studentsOnly />
+                </Protected>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <Protected roles={['admin']}>
+                  <OverviewPage admin />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor/courses"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <WorkspacePage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/instructor/courses/:courseId"
+              element={
+                <Protected roles={['instructor', 'admin']}>
+                  <ManagementPage />
+                </Protected>
+              }
+            />
+            <Route
+              path="/admin/courses"
+              element={
+                <Protected roles={['admin']}>
+                  <WorkspacePage admin />
+                </Protected>
+              }
+            />
+            <Route
+              path="/admin/courses/:courseId"
+              element={
+                <Protected roles={['admin']}>
+                  <ManagementPage admin />
+                </Protected>
+              }
+            />
+            <Route path="*" element={<PageFallback kind="not-found" />} />
+          </Routes>
+        </PageErrorBoundary>
       </main>
       {!isAuth && (
         <footer className="site-footer">

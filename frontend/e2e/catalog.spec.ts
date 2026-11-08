@@ -46,7 +46,9 @@ test('real catalog loads a limited first page, appends unique courses and resets
   const first = await openCatalog(page);
   expect((await first.json()).items).toHaveLength(9);
   await expect(
-    page.getByText(`${fixture.total} courses available`, { exact: true }),
+    page.getByText(`${fixture.total} courses match your filters`, {
+      exact: true,
+    }),
   ).toBeVisible();
   const nextPage = page.waitForResponse((response) =>
     catalogResponse(response, 2),
@@ -60,21 +62,20 @@ test('real catalog loads a limited first page, appends unique courses and resets
     .evaluateAll((links) => links.map((link) => link.getAttribute('href')));
   expect(new Set(hrefs).size).toBe(fixture.total);
 
-  await page
-    .getByRole('combobox', { name: 'Level', exact: true })
-    .selectOption('beginner');
   const reset = page.waitForResponse((response) =>
     catalogResponse(response, 1, 'beginner'),
   );
-  await page.getByRole('button', { name: 'Find courses', exact: true }).click();
+  await page
+    .getByRole('combobox', { name: 'Level', exact: true })
+    .selectOption('beginner');
   expect((await reset).status()).toBe(200);
   await expect(page.locator('.catalog-course-card')).toHaveCount(9);
   await expect(page.getByLabel('Search courses', { exact: true })).toHaveValue(
     fixture.search,
   );
-  await expect(page.getByLabel('Category', { exact: true })).toHaveValue(
-    fixture.category,
-  );
+  await expect(
+    page.getByRole('combobox', { name: 'Category', exact: true }),
+  ).toHaveValue(fixture.category);
   await expect(
     page.getByRole('combobox', { name: 'Level', exact: true }),
   ).toHaveValue('beginner');
@@ -87,13 +88,12 @@ test('real catalog loads a limited first page, appends unique courses and resets
   await page
     .getByLabel('Search courses', { exact: true })
     .fill(`absent-${crypto.randomUUID()}`);
-  await page.getByRole('button', { name: 'Find courses', exact: true }).click();
   await expect(
     page.getByRole('heading', { name: 'No courses found' }),
   ).toBeVisible();
   await expect(page.locator('.catalog-course-card')).toHaveCount(0);
   await expect(
-    page.getByText('0 courses available', { exact: true }),
+    page.getByText('0 courses match your filters', { exact: true }),
   ).toBeVisible();
 });
 

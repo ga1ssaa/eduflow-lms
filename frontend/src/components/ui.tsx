@@ -62,9 +62,11 @@ export function ErrorPanel({
       ? 'It may no longer be available, or you may need to enroll first.'
       : status === 403
         ? 'Your current account does not have permission for this action.'
-        : isApiError(error)
-          ? error.message
-          : 'Check your connection and try again.';
+        : status >= 500
+          ? 'The service is temporarily unavailable. Please try again shortly.'
+          : isApiError(error)
+            ? error.message
+            : 'Check your connection and try again.';
   return (
     <div className="feedback error" role="alert">
       <AlertCircle size={22} aria-hidden="true" />
@@ -197,15 +199,23 @@ export function Pagination({
   );
 }
 export function safeReturn(value: string | null, fallback = '/learning') {
-  return value &&
-    value.length <= 2048 &&
-    value.startsWith('/') &&
-    !value.startsWith('//') &&
-    !value.includes('\\') &&
-    !Array.from(value).some((character) => character.charCodeAt(0) < 32) &&
-    !/^\/(login|register)(?:[/?#]|$)/.test(value)
-    ? value
-    : fallback;
+  if (
+    !value ||
+    value.length > 2048 ||
+    !value.startsWith('/') ||
+    value.startsWith('//') ||
+    value.includes('\\') ||
+    Array.from(value).some((character) => character.charCodeAt(0) < 32)
+  )
+    return fallback;
+  try {
+    const pathname = decodeURIComponent(
+      new URL(value, 'https://eduflow.invalid').pathname,
+    );
+    return /^\/(login|register)(?:\/|$)/i.test(pathname) ? fallback : value;
+  } catch {
+    return fallback;
+  }
 }
 export function safeVideo(value: string | null | undefined) {
   try {
