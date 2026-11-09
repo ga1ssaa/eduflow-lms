@@ -19,6 +19,7 @@ import {
   usePage,
 } from '../components/ui';
 import { useCatalogFeed, useCatalogSentinel } from '../hooks/useCatalogFeed';
+import { useCatalogAnchorRestoration } from '../hooks/useCatalogAnchorRestoration';
 import {
   CatalogHero,
   CatalogCourseCard,
@@ -51,6 +52,25 @@ export function CatalogPage() {
     hasPreviousResults,
     loadMore,
   } = useCatalogFeed(filters);
+  useCatalogAnchorRestoration(
+    [
+      courses.length,
+      query.isPending,
+      query.isFetchingNextPage,
+      query.isError,
+      query.isPaused,
+      query.hasNextPage,
+      hasPreviousResults,
+      total,
+    ].join(':'),
+    query.isFetching && !query.isPaused,
+    {
+      pageCount: query.data?.pages.length ?? 0,
+      hasNextPage: !!query.hasNextPage,
+      fetchingNextPage: query.isFetchingNextPage,
+      blocked: query.isError || query.isPaused,
+    },
+  );
   const sentinel = useCatalogSentinel({
     enabled: !!query.hasNextPage && !query.isError,
     isFetching: query.isFetching,

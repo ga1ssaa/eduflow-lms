@@ -266,6 +266,34 @@ describe('shared scroll reveal lifecycle', () => {
     expect(target).toHaveAttribute('data-reveal-state', 'revealed');
   });
 
+  it.each(['click', 'pointercancel', 'keydown', 'blur'])(
+    'does not move a pressed link, then restores focus settlement after %s',
+    (release) => {
+      render(
+        <Page>
+          <section data-reveal data-testid="target">
+            <a href="#next">Focus this link</a>
+          </section>
+        </Page>,
+      );
+      const target = screen.getByTestId('target');
+      const link = screen.getByRole('link');
+      act(() => ObservedIntersections.instances[0].enter(target));
+      expect(target).toHaveAttribute('data-reveal-state', 'revealing');
+      fireEvent.pointerDown(link);
+      // Touch compatibility focus can arrive after the pointer is released.
+      fireEvent.pointerUp(link);
+      act(() => link.focus());
+      expect(target).toHaveAttribute('data-reveal-state', 'revealing');
+      fireEvent(window, new Event(release));
+      act(() => {
+        link.blur();
+        link.focus({ preventScroll: true });
+      });
+      expect(target).toHaveAttribute('data-reveal-state', 'revealed');
+    },
+  );
+
   it('keeps all content visible without IntersectionObserver', () => {
     vi.stubGlobal('IntersectionObserver', undefined);
     render(
@@ -417,6 +445,7 @@ describe('shared scroll reveal lifecycle', () => {
     const target = screen.getByTestId('target');
     const root = target.closest('main')!;
     const remove = vi.spyOn(root, 'removeEventListener');
+    const removeWindow = vi.spyOn(window, 'removeEventListener');
     const observer = ObservedIntersections.instances[0];
     act(() => {
       observer.enter(target);
@@ -430,6 +459,18 @@ describe('shared scroll reveal lifecycle', () => {
       expect.any(Function),
     );
     expect(remove).toHaveBeenCalledWith('focusin', expect.any(Function));
+    expect(remove).toHaveBeenCalledWith(
+      'pointerdown',
+      expect.any(Function),
+      true,
+    );
+    for (const event of ['click', 'pointercancel', 'keydown'])
+      expect(removeWindow).toHaveBeenCalledWith(
+        event,
+        expect.any(Function),
+        true,
+      );
+    expect(removeWindow).toHaveBeenCalledWith('blur', expect.any(Function));
     expect(remove).toHaveBeenCalledWith('animationend', expect.any(Function));
     expect(target).toHaveAttribute('data-reveal-state', 'revealed');
     act(() => {

@@ -582,7 +582,10 @@ test('an offscreen hero or a route without a hero changes palette immediately', 
   await expect(page.locator('[data-theme-hero=catalog]')).toBeVisible();
   await chooseTheme(page, 'dark');
   await expect(page.locator('[data-theme-scene-atmosphere]')).toHaveCount(1);
-  await page.getByRole('link', { name: 'EduFlow home', exact: true }).click();
+  await page
+    .getByRole('banner')
+    .getByRole('link', { name: 'EduFlow home', exact: true })
+    .click();
   await expect(page.locator('[data-theme-hero=home]')).toBeVisible();
   await settled(page);
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -733,10 +736,13 @@ test('head bootstrap resolves saved, invalid and blocked storage preferences wit
     });
     const page = await context.newPage();
     let intercepted = 0;
-    await page.route(/\/src\/main\.tsx(?:\?.*)?$/, (route) => {
-      intercepted++;
-      return route.abort();
-    });
+    await page.route(
+      /\/(?:src\/main\.tsx|assets\/index-[^/]+\.js)(?:\?.*)?$/,
+      (route) => {
+        intercepted++;
+        return route.abort();
+      },
+    );
     await page.addInitScript(
       ({ saved, blocked }) => {
         localStorage.setItem('eduflow-theme', saved);

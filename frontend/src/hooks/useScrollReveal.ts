@@ -22,6 +22,7 @@ export function useScrollReveal(pageKey: string) {
     const timers = new Map<HTMLElement, ReturnType<typeof setTimeout>>();
     let observer: IntersectionObserver | undefined;
     let disposed = false;
+    let pointerTarget: Node | null = null;
 
     const finish = (element: HTMLElement) => {
       observer?.unobserve(element);
@@ -117,11 +118,22 @@ export function useScrollReveal(pageKey: string) {
       node.querySelectorAll<HTMLElement>(targetSelector).forEach(register);
     };
 
+    const onPointerDown = (event: PointerEvent) => {
+      pointerTarget = event.target instanceof Node ? event.target : null;
+    };
+    const clearPointer = () => {
+      pointerTarget = null;
+    };
     const onFocus = (event: FocusEvent) => {
       if (!(event.target instanceof HTMLElement)) return;
+      const pointerFocus =
+        pointerTarget !== null && event.target.contains(pointerTarget);
       let element = event.target.closest<HTMLElement>(targetSelector);
       while (element && root.contains(element)) {
-        finish(element);
+        // Moving a pressed link between pointerdown and pointerup loses its
+        // click. Let an active entrance finish naturally for pointer focus.
+        if (!pointerFocus || element.dataset.revealState !== 'revealing')
+          finish(element);
         element =
           element.parentElement?.closest<HTMLElement>(targetSelector) ?? null;
       }
@@ -163,6 +175,13 @@ export function useScrollReveal(pageKey: string) {
             }
           });
     mutations?.observe(root, { childList: true, subtree: true });
+    root.addEventListener('pointerdown', onPointerDown, true);
+    // Touch browsers may focus during the compatibility mouse event after
+    // pointerup. Keep provenance until click hit-testing has completed.
+    window.addEventListener('click', clearPointer, true);
+    window.addEventListener('pointercancel', clearPointer, true);
+    window.addEventListener('keydown', clearPointer, true);
+    window.addEventListener('blur', clearPointer);
     root.addEventListener('focusin', onFocus);
     root.addEventListener('animationend', onAnimationEnd);
     document.addEventListener(themeMotionEvent, onThemeMotion);
@@ -184,6 +203,11 @@ export function useScrollReveal(pageKey: string) {
           delete element.dataset.revealState;
       });
       targets.clear();
+      root.removeEventListener('pointerdown', onPointerDown, true);
+      window.removeEventListener('click', clearPointer, true);
+      window.removeEventListener('pointercancel', clearPointer, true);
+      window.removeEventListener('keydown', clearPointer, true);
+      window.removeEventListener('blur', clearPointer);
       root.removeEventListener('focusin', onFocus);
       root.removeEventListener('animationend', onAnimationEnd);
       document.removeEventListener(themeMotionEvent, onThemeMotion);

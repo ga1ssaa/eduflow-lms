@@ -291,7 +291,11 @@ for (const destination of ['dark', 'light'] as const) {
           );
           await page.mouse.up();
         } else await page.keyboard.press(method);
-        await expect.poll(() => page.evaluate(() => scrollY)).not.toBe(startY);
+        await expect
+          .poll(() => page.evaluate(() => scrollY), {
+            message: `${method} must move the ${width}px viewport from ${startY}px`,
+          })
+          .not.toBe(startY);
         // Browser keyboard/touch inertia is native, not governed by page.clock.
         // Settle it before measuring the boundary for a second input gesture.
         await settleNativeScroll(page);

@@ -255,7 +255,7 @@ function Shell() {
           </Routes>
         </PageErrorBoundary>
       </main>
-      {!isAuth && <Footer user={auth.user} showNavigation={!isCatalog} />}
+      {!isAuth && <Footer />}
     </CatalogFrame>
   );
 }
