@@ -8,9 +8,9 @@ Built as a portfolio project, EduFlow demonstrates complete student, instructor 
 
 ## Live Demo
 
-**[Explore EduFlow](https://eduflow-lms-topaz.vercel.app)** · [Source code](https://github.com/ga1ssaa/eduflow-lms)
+**[Explore EduFlow](https://eduflow-lms.tech)** · [Source code](https://github.com/ga1ssaa/eduflow-lms)
 
-The portfolio is deployed on Vercel, Render and Neon. The backend can sleep when inactive, so the first API request may take longer or need a retry. Current working-branch polish and screenshots may precede publication to the live deployment.
+The primary production URL is **https://eduflow-lms.tech**. The [Vercel provider URL](https://eduflow-lms-topaz.vercel.app) is retained for operational reference. The portfolio is deployed on Vercel, Render and Neon. The backend can sleep when inactive, so the first API request may take longer or need a retry. Current working-branch polish and screenshots may precede publication to the live deployment.
 
 Registration creates a student account. Instructor and administrator access require explicitly provisioned accounts; no shared credentials or default privileged account are published.
 
@@ -186,13 +186,13 @@ The database starts without accounts or courses. Register a student through the 
 
 The original manifest contains **8 courses, 21 modules and 63 lessons** with explanations, examples and exercises. It uses deterministic identities and does not create accounts or run at startup. These courses supplement the catalog; they are not a product limit.
 
-Three supplementary **CC BY 3.0** videos with plaintext attribution have been attached in **local development only**:
+Three supplementary **CC BY 3.0** videos with plaintext attribution are confirmed attached to the production demo lessons:
 
 - Python Fundamentals → **Names and Values**.
 - Git & GitHub Workflow → **Focused Commits**.
 - Web Development Foundations → **Semantic HTML**.
 
-This does not establish production attachment. Media sources, caption limitations and guarded attachment instructions are documented in [Demo videos](docs/demo-videos.md).
+Media sources, caption limitations and guarded maintenance procedures are documented in [Demo videos](docs/demo-videos.md). Attachment status does not establish current external playback availability.
 
 ## Security
 
@@ -249,6 +249,6 @@ The portfolio is deployed and the core catalog, authentication, authoring, enrol
 
 - [Development guide](docs/development.md): local accounts, API contracts, demo curriculum and isolated verification.
 - [Deployment guide](docs/deployment.md): hosting configuration, proxy/cookie behavior and approval-gated remote maintenance.
-- [Demo videos](docs/demo-videos.md): media attribution, local attachment and future production procedure.
+- [Demo videos](docs/demo-videos.md): media attribution, confirmed production attachments and guarded maintenance procedures.
 - [Project specification](PROJECT_SPEC.md): domain rules, delivery phases and scope.
 - [Design system](DESIGN_SYSTEM.md): themes, components, motion and accessibility conventions.

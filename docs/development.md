@@ -152,7 +152,7 @@ docker compose exec backend python -m app.seed_demo_courses --instructor-id "<AC
 docker compose exec backend python -m app.seed_demo_courses --instructor-id "<ACTIVE_INSTRUCTOR_UUID>" --apply
 ```
 
-The optional [video attachment procedure](demo-videos.md) adds three reviewed CC BY 3.0 videos and attribution to selected original lessons. Attachment is confirmed for local development only, not production. Once attached, the original seed/importer intentionally reports a fingerprint conflict; verify using the attachment CLI, never reset lessons to make the original seed pass.
+The optional [video attachment procedure](demo-videos.md) adds three reviewed CC BY 3.0 videos and attribution to selected original lessons. Production attachment is confirmed for **Names and Values**, **Focused Commits** and **Semantic HTML**; current external playback availability requires separate verification. Once attached, the original seed/importer intentionally reports a fingerprint conflict; verify using the attachment CLI, never reset lessons to make the original seed pass.
 
 ## Course management
 
