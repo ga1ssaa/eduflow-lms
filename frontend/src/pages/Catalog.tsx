@@ -381,8 +381,8 @@ function StudentCourseAction({
     };
   }, []);
   const access = useQuery({
-    queryKey: ['student', userId, 'course', course.id],
-    queryFn: ({ signal }) => api.studentCourse(course.id, signal),
+    queryKey: ['student', userId, 'dashboard'],
+    queryFn: ({ signal }) => api.dashboard(signal),
     enabled: !!userId && !!course.id,
     retry: false,
   });
@@ -402,21 +402,21 @@ function StudentCourseAction({
     enrollment.mutate();
   };
   if (access.isPending) return <Loading label="Checking your enrollment…" />;
-  if (
-    access.isError &&
-    !(isApiError(access.error) && access.error.status === 404)
-  )
+  if (access.isError)
     return (
       <ErrorPanel error={access.error} retry={() => void access.refetch()} />
     );
-  if (access.data && !access.isError) {
+  const enrolledCourse = access.data.courses.find(
+    (entry) => entry.course_id === course.id,
+  );
+  if (enrolledCourse) {
     const completed =
-      access.data.is_completed ||
-      (access.data.total_lessons > 0 &&
-        access.data.completed_lessons >= access.data.total_lessons);
+      enrolledCourse.is_completed ||
+      (enrolledCourse.total_lessons > 0 &&
+        enrolledCourse.completed_lessons >= enrolledCourse.total_lessons);
     const label = completed
       ? 'Review Course'
-      : access.data.completed_lessons > 0
+      : enrolledCourse.completed_lessons > 0
         ? 'Continue Learning'
         : 'Start Learning';
     return (
