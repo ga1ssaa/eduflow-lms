@@ -5,9 +5,12 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
-import { StrictMode, type ReactNode } from 'react';
+import { readFileSync } from 'node:fs';
+import { StrictMode, useLayoutEffect, type ReactNode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+
+const revealCss = readFileSync('src/reveal.css', 'utf8');
 
 class ObservedIntersections {
   static instances: ObservedIntersections[] = [];
@@ -72,11 +75,16 @@ function animationEnd(element: HTMLElement, name: string) {
   fireEvent(element, event);
 }
 beforeEach(() => {
+  const style = document.createElement('style');
+  style.dataset.testReveal = '';
+  style.textContent = revealCss;
+  document.head.append(style);
   ObservedIntersections.instances = [];
   vi.stubGlobal('IntersectionObserver', ObservedIntersections);
   motionPreference();
 });
 afterEach(() => {
+  document.querySelector('style[data-test-reveal]')?.remove();
   vi.useRealTimers();
 });
 
@@ -107,7 +115,27 @@ describe('shared scroll reveal lifecycle', () => {
     expect(target).toHaveAttribute('data-reveal-state', 'revealing');
   });
 
-  it('keeps observed content visible and applies 80ms stagger with a 400ms cap', () => {
+  it('prepares observed content before paint without changing its resting geometry', () => {
+    let prepared = false;
+    function BeforePaint() {
+      const root = useScrollReveal('before-paint');
+      useLayoutEffect(() => {
+        const target = root.current!.querySelector('section')!;
+        prepared =
+          target.dataset.revealState === 'observed' &&
+          getComputedStyle(target).opacity === '0';
+      }, [root]);
+      return (
+        <main ref={root}>
+          <section data-reveal>Content</section>
+        </main>
+      );
+    }
+    render(<BeforePaint />);
+    expect(prepared).toBe(true);
+  });
+
+  it('keeps prepared content hidden until entry and applies 80ms stagger with a 400ms cap', () => {
     render(
       <Page>
         {[0, 1, 5, 20, -1].map((index) => (
@@ -131,7 +159,7 @@ describe('shared scroll reveal lifecycle', () => {
       [-1, 0],
     ]) {
       const target = screen.getByTestId(`target-${index}`);
-      expect(target).toBeVisible();
+      expect(target).not.toBeVisible();
       expect(target).toHaveAttribute('data-reveal-state', 'observed');
       expect(target.style.getPropertyValue('--reveal-delay')).toBe(
         `${delay}ms`,
@@ -169,33 +197,54 @@ describe('shared scroll reveal lifecycle', () => {
     expect(target).toHaveAttribute('data-reveal-state', 'revealed');
   });
 
-  it('keeps longer directional entrances active until their duration-aware fallback, without changing card timing', () => {
-    vi.useFakeTimers();
-    render(
+  it.each([
+    ['1050ms', '600ms'],
+    ['1.05s', '.6s'],
+  ])(
+    'honors CSS time units (%s / %s) without premature fallback cleanup',
+    (directionalTime, cardTime) => {
+      vi.useFakeTimers();
+      render(
+        <Page>
+          <div data-reveal="from-right" data-testid="directional">
+            Heading
+          </div>
+          <article data-reveal data-testid="card">
+            Course
+          </article>
+        </Page>,
+      );
+      const directional = screen.getByTestId('directional');
+      const card = screen.getByTestId('card');
+      directional.style.setProperty('--reveal-duration', directionalTime);
+      card.style.setProperty('--reveal-duration', cardTime);
+      const observer = ObservedIntersections.instances[0];
+      act(() => {
+        observer.enter(directional);
+        observer.enter(card);
+        vi.advanceTimersByTime(700);
+      });
+      expect(card).toHaveAttribute('data-reveal-state', 'revealed');
+      expect(directional).toHaveAttribute('data-reveal-state', 'revealing');
+      act(() => vi.advanceTimersByTime(449));
+      expect(directional).toHaveAttribute('data-reveal-state', 'revealing');
+      act(() => vi.advanceTimersByTime(1));
+      expect(directional).toHaveAttribute('data-reveal-state', 'revealed');
+    },
+  );
+
+  it('releases unseen targets on teardown rather than leaving hidden orphaned content', () => {
+    const view = render(
       <Page>
-        <div data-reveal="from-right" data-testid="directional">
-          Heading
-        </div>
-        <article data-reveal data-testid="card">
-          Course
-        </article>
+        <section data-reveal data-testid="pending">
+          Pending
+        </section>
       </Page>,
     );
-    const directional = screen.getByTestId('directional');
-    const card = screen.getByTestId('card');
-    directional.style.setProperty('--reveal-duration', '1050ms');
-    const observer = ObservedIntersections.instances[0];
-    act(() => {
-      observer.enter(directional);
-      observer.enter(card);
-      vi.advanceTimersByTime(700);
-    });
-    expect(card).toHaveAttribute('data-reveal-state', 'revealed');
-    expect(directional).toHaveAttribute('data-reveal-state', 'revealing');
-    act(() => vi.advanceTimersByTime(449));
-    expect(directional).toHaveAttribute('data-reveal-state', 'revealing');
-    act(() => vi.advanceTimersByTime(1));
-    expect(directional).toHaveAttribute('data-reveal-state', 'revealed');
+    const pending = screen.getByTestId('pending');
+    expect(pending).toHaveAttribute('data-reveal-state', 'observed');
+    view.unmount();
+    expect(pending).not.toHaveAttribute('data-reveal-state');
   });
 
   it('reveals keyboard-focused content immediately instead of fading an active control', () => {

@@ -1,14 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 const targetSelector = '[data-reveal]';
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)';
 const themeMotionEvent = 'eduflow:theme-transition-start';
 
-/** Content stays visible until an intersection starts its one-time entrance. */
+function milliseconds(value: string, fallback: number) {
+  const match = /^(\d*\.?\d+)(ms|s)$/.exec(value.trim());
+  return match ? Number(match[1]) * (match[2] === 's' ? 1000 : 1) : fallback;
+}
+
+/** Prepare entrances before paint; unenhanced content remains visible. */
 export function useScrollReveal(pageKey: string) {
   const container = useRef<HTMLElement>(null);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = container.current;
     if (!root) return;
 
@@ -51,16 +56,14 @@ export function useScrollReveal(pageKey: string) {
               observer?.unobserve(element);
               element.dataset.revealState = 'revealing';
               // Animation events are not guaranteed in background tabs or tests.
-              const delay = Number.parseInt(
+              const delay = milliseconds(
                 element.style.getPropertyValue('--reveal-delay'),
-                10,
+                0,
               );
-              const duration =
-                Number.parseFloat(
-                  getComputedStyle(element).getPropertyValue(
-                    '--reveal-duration',
-                  ),
-                ) || 600;
+              const duration = milliseconds(
+                getComputedStyle(element).getPropertyValue('--reveal-duration'),
+                600,
+              );
               timers.set(
                 element,
                 setTimeout(() => finish(element), delay + duration + 100),
@@ -137,7 +140,12 @@ export function useScrollReveal(pageKey: string) {
     };
     const onThemeMotion = () => {
       targets.forEach((element) => {
-        if (element.dataset.revealState === 'revealing') finish(element);
+        if (
+          element.dataset.revealState === 'revealing' ||
+          (element.dataset.revealState === 'observed' &&
+            element.hasAttribute('data-hero-face'))
+        )
+          finish(element);
       });
     };
 
@@ -172,6 +180,8 @@ export function useScrollReveal(pageKey: string) {
       targets.forEach((element) => {
         if (element.dataset.revealState === 'revealing')
           element.dataset.revealState = 'revealed';
+        else if (element.dataset.revealState === 'observed')
+          delete element.dataset.revealState;
       });
       targets.clear();
       root.removeEventListener('focusin', onFocus);
