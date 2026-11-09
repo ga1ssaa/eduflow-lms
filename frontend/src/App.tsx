@@ -6,6 +6,7 @@ import { ErrorPanel, Loading } from './components/ui';
 import { PageErrorBoundary, PageFallback } from './components/PageFallback';
 import { Navbar } from './components/navigation/Navbar';
 import { AuthHeader } from './components/navigation/AuthHeader';
+import { Footer } from './components/Footer';
 import { CatalogAnchor } from './components/catalog/CatalogAnchor';
 import { CatalogPage, CoursePage } from './pages/Catalog';
 import { LandingPage } from './pages/Landing';
@@ -254,30 +255,7 @@ function Shell() {
           </Routes>
         </PageErrorBoundary>
       </main>
-      {!isAuth && (
-        <footer className="site-footer">
-          <span>EduFlow</span>
-          {!isCatalog && (
-            <nav aria-label="Footer navigation">
-              <Link to="/courses">Explore courses</Link>
-              <Link
-                to={
-                  auth.user
-                    ? auth.user.role === 'student'
-                      ? '/learning'
-                      : auth.user.role === 'admin'
-                        ? '/admin'
-                        : '/instructor'
-                    : '/login'
-                }
-              >
-                {auth.user ? 'Your workspace' : 'Sign in'}
-              </Link>
-            </nav>
-          )}
-          <span>A clear path to your next skill.</span>
-        </footer>
-      )}
+      {!isAuth && <Footer user={auth.user} showNavigation={!isCatalog} />}
     </CatalogFrame>
   );
 }

@@ -12,6 +12,9 @@ function Page() {
       <section data-reveal data-testid="waiting">
         Later content
       </section>
+      <div data-hero-face data-reveal data-testid="pending-hero">
+        Hero awaiting its first intersection
+      </div>
     </main>
   );
 }
@@ -50,6 +53,10 @@ it('finishes an active card entrance and keeps new intersections visible during 
     document.dispatchEvent(new CustomEvent('eduflow:theme-transition-start'));
   });
   expect(active).toHaveAttribute('data-reveal-state', 'revealed');
+  expect(screen.getByTestId('pending-hero')).toHaveAttribute(
+    'data-reveal-state',
+    'revealed',
+  );
   expect(waiting).toHaveAttribute('data-reveal-state', 'observed');
   act(() => enter(waiting));
   expect(waiting).toHaveAttribute('data-reveal-state', 'revealed');
