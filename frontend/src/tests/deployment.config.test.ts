@@ -1,13 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const config = JSON.parse(readFileSync('vercel.json.example', 'utf8'));
+const template = JSON.parse(readFileSync('vercel.json.example', 'utf8'));
+const production = JSON.parse(readFileSync('vercel.json', 'utf8'));
 
-describe('Vercel deployment template', () => {
+describe.each([
+  ['template', template, 'replace-with-render-host.invalid'],
+  ['production', production, 'eduflow-api-og4r.onrender.com'],
+])('Vercel %s deployment configuration', (_name, config, hostname) => {
   it('proxies the unchanged API prefix before the SPA fallback', () => {
     expect(config.rewrites[0]).toEqual({
       source: '/api/v1/:path*',
-      destination: 'https://replace-with-render-host.invalid/api/v1/:path*',
+      destination: `https://${hostname}/api/v1/:path*`,
     });
     const fallback = new RegExp(`^${config.rewrites[1].source}$`);
     for (const path of ['/login', '/learning', '/courses/python']) {
@@ -31,5 +35,18 @@ describe('Vercel deployment template', () => {
         ],
       },
     ]);
+  });
+});
+
+it('changes only the upstream hostname from the reviewed template', () => {
+  expect(production).toEqual({
+    ...template,
+    rewrites: [
+      {
+        ...template.rewrites[0],
+        destination: 'https://eduflow-api-og4r.onrender.com/api/v1/:path*',
+      },
+      ...template.rewrites.slice(1),
+    ],
   });
 });
