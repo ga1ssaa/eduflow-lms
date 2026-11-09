@@ -14,6 +14,64 @@ test.skip(
   'Requires private isolated test accounts and two instructor-owned courses.',
 );
 
+for (const touch of [false, true]) {
+  test.describe(touch ? 'touch activation' : 'pointer activation', () => {
+    test.use({
+      hasTouch: touch,
+      viewport: { width: touch ? 375 : 1440, height: 900 },
+    });
+
+    test('first activation of an entering course link navigates without losing the click', async ({
+      page,
+    }) => {
+      const f = fixtures!;
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.goto('/login');
+      await page.getByLabel('Email address').fill(f.instructor.email);
+      await page.getByLabel(/^Password/).fill(f.instructor.password);
+      await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+      await expect(page).toHaveURL(/\/instructor$/);
+      await page.goto('/instructor/courses');
+      const link = page.getByRole('link', {
+        name: f.course.title,
+        exact: true,
+      });
+      const card = page.locator('.course-row').filter({ has: link });
+      await card.scrollIntoViewIfNeeded();
+      await expect(card).toHaveAttribute('data-reveal-state', 'revealing');
+      // Hold the actual CSS entrance early enough to expose a focus-induced
+      // transform reset between press and release, without timing a fast click.
+      await card.evaluate((element) => {
+        element.addEventListener(
+          'pointerdown',
+          () => {
+            document.documentElement.dataset.pressedReveal = (
+              element as HTMLElement
+            ).dataset.revealState;
+          },
+          { once: true },
+        );
+        const animation = element.getAnimations()[0];
+        if (!animation) throw new Error('Expected an active course entrance');
+        animation.pause();
+        animation.currentTime = (animation.effect!.getTiming().delay ?? 0) + 1;
+      });
+      if (touch) await link.tap();
+      else await link.click();
+      await expect(page.locator('html')).toHaveAttribute(
+        'data-pressed-reveal',
+        'revealing',
+      );
+      await expect(page).toHaveURL(
+        new RegExp(`/instructor/courses/${f.course.id}$`),
+      );
+      await expect(
+        page.getByRole('link', { name: 'Edit curriculum', exact: true }),
+      ).toBeVisible();
+    });
+  });
+}
+
 test('unsaved curriculum survives cancelled navigation and resets after an approved course switch', async ({
   page,
 }) => {

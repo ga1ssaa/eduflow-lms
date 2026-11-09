@@ -36,6 +36,20 @@ async function expectSignedOut(page: Page) {
   await expect(page.getByLabel('Account menu')).toHaveCount(0);
 }
 
+async function openLearning(page: Page, courseId: string) {
+  const entry = page
+    .getByRole('button', { name: 'Enroll and Start Learning', exact: true })
+    .or(
+      page.getByRole('link', {
+        name: /^(Start Learning|Continue Learning|Review Course)$/,
+      }),
+    );
+  await expect(entry).toBeVisible();
+  if (await entry.getAttribute('href'))
+    await expect(entry).toHaveAttribute('href', `/learn/${courseId}`);
+  await entry.click();
+}
+
 test('public registration creates a working student session', async ({
   page,
 }) => {
@@ -69,7 +83,7 @@ test('catalog, cookie authentication, enrollment and completion use the real API
   ).toHaveCount(0);
   await login(page, f.student);
   await page.goto(`/courses/${f.course.slug}`);
-  await page.getByRole('button', { name: 'Enroll and start learning' }).click();
+  await openLearning(page, f.course.id);
   await expect(page).toHaveURL(new RegExp(`/learn/${f.course.id}`));
   await expect(
     page.getByText('Private lesson 1.', { exact: false }),
@@ -91,6 +105,23 @@ test('catalog, cookie authentication, enrollment and completion use the real API
       path: 'test-results/classroom.png',
       fullPage: true,
     });
+  await page.reload();
+  await expect(
+    page.getByRole('button', { name: 'Mark as incomplete' }),
+  ).toBeVisible();
+  await page.getByLabel('Account menu').click();
+  const firstLogout = page.waitForResponse((response) =>
+    response.url().endsWith('/auth/logout'),
+  );
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  expect((await firstLogout).status()).toBe(204);
+  await expectSignedOut(page);
+  await login(page, f.student);
+  await page.goto(`/learn/${f.course.id}`);
+  await expect(
+    page.getByRole('button', { name: 'Mark as incomplete' }),
+  ).toBeVisible();
+  await expect(page.getByText('50%', { exact: true })).toBeVisible();
   await page.reload();
   await expect(
     page.getByRole('button', { name: 'Mark as incomplete' }),
@@ -132,7 +163,9 @@ test('instructor statistics and admin moderation respect role workspaces', async
   // Establish this test's enrollment independently of the learning test.
   await login(page, f.student);
   await page.goto(`/courses/${f.course.slug}`);
-  await page.getByRole('button', { name: 'Enroll and start learning' }).click();
+  // A fresh run may enroll here; the preceding learning case already enrolled
+  // the same fixture student during a full run. Both actions open the same course.
+  await openLearning(page, f.course.id);
   await expect(page).toHaveURL(new RegExp(`/learn/${f.course.id}`));
   await page.getByLabel('Account menu').click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();

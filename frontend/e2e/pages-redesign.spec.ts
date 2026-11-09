@@ -276,9 +276,17 @@ test('student dashboard and enrolled classroom remain usable across themes and w
   const f = fixtures!;
   await login(page, f.student);
   await page.goto(`/courses/${f.course.slug}`);
-  await page
-    .getByRole('button', { name: 'Enroll and start learning', exact: true })
-    .click();
+  const entry = page
+    .getByRole('button', { name: 'Enroll and Start Learning', exact: true })
+    .or(
+      page.getByRole('link', {
+        name: /^(Start Learning|Continue Learning|Review Course)$/,
+      }),
+    );
+  await expect(entry).toBeVisible();
+  if (await entry.getAttribute('href'))
+    await expect(entry).toHaveAttribute('href', `/learn/${f.course.id}`);
+  await entry.click();
   await expect(page).toHaveURL(new RegExp(`/learn/${f.course.id}`));
   for (const path of ['/learning', `/learn/${f.course.id}`])
     await auditResponsive(page, path, { account: true });

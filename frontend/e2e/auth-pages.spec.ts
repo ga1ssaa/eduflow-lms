@@ -40,14 +40,18 @@ for (const path of ['/login', '/register']) {
             exact: true,
           }),
         ).toBeVisible();
-        const intro = (await page.locator('.auth-intro').boundingBox())!;
         const form = (await page.locator('.auth-form-content').boundingBox())!;
         if (width > 900) {
+          await expect(page.locator('.auth-intro')).toBeVisible();
+          const intro = (await page.locator('.auth-intro').boundingBox())!;
           expect(intro.x + intro.width).toBeLessThan(form.x);
           expect(
             Math.abs(form.y + form.height / 2 - intro.y - intro.height / 2),
           ).toBeLessThan(1);
-        } else expect(form.y).toBeLessThan(intro.y);
+        } else {
+          await expect(page.locator('.auth-intro')).not.toBeVisible();
+          await expect(page.locator('.auth-form-content')).toBeVisible();
+        }
         const inputs = page.locator('.auth-card input');
         await expect(inputs).toHaveCount(path === '/register' ? 3 : 2);
         for (const input of await inputs.all()) {
