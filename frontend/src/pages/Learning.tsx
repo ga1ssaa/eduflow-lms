@@ -1,6 +1,7 @@
 import '../pages.css';
 import '../learning.css';
 import { Atmosphere } from '../components/Atmosphere';
+import { LessonVideo } from '../components/LessonVideo';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
@@ -10,7 +11,6 @@ import {
   Layers3,
   Check,
   CheckCircle2,
-  ExternalLink,
   LockKeyhole,
 } from 'lucide-react';
 import { api } from '../lib/api';
@@ -396,18 +396,10 @@ export function LessonPage() {
                 {lesson.data.is_completed && <Badge success>Completed</Badge>}
               </div>
               <h2>{lesson.data.title}</h2>
-              {video && (
-                <a
-                  className="video-link"
-                  href={video}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open lesson video{' '}
-                  <ExternalLink size={18} aria-hidden="true" />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </a>
-              )}
+              <LessonVideo
+                url={lesson.data.video_url}
+                title={lesson.data.title}
+              />
               <div className="lesson-text">
                 {lesson.data.content ||
                   (video

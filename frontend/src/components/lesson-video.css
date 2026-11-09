@@ -1,0 +1,21 @@
+.lesson-video {
+  display: grid;
+  gap: 12px;
+  margin-block: 20px;
+  min-width: 0;
+}
+
+.lesson-video video {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  background: var(--surface);
+  border-radius: 8px;
+}
+
+.lesson-video video:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}

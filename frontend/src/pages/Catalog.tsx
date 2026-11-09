@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import {
@@ -9,7 +10,8 @@ import {
 } from 'lucide-react';
 import { api } from '../lib/api';
 import { useAuth } from '../auth/AuthProvider';
-import type { Level } from '../lib/types';
+import type { Level, PublicCourseDetail } from '../lib/types';
+import { isApiError } from '../lib/client';
 import {
   Badge,
   Empty,
@@ -213,18 +215,9 @@ export function CatalogPage() {
 export function CoursePage() {
   const { slug = '' } = useParams();
   const auth = useAuth();
-  const navigate = useNavigate();
-  const client = useQueryClient();
   const query = useQuery({
     queryKey: ['public-course', slug],
     queryFn: ({ signal }) => api.publicCourse(slug, signal),
-  });
-  const enrollment = useMutation({
-    mutationFn: (id: string) => api.enroll(id),
-    onSuccess: async (_, id) => {
-      await client.invalidateQueries({ queryKey: ['student', auth.user?.id] });
-      navigate(`/learn/${id}`);
-    },
   });
   if (query.isPending) return <Loading label="Loading course…" />;
   if (query.isError)
@@ -319,7 +312,7 @@ export function CoursePage() {
           <h2 id="course-enrollment-title" data-reveal>
             Your next step starts here
           </h2>
-          <p>Enroll to access the lessons and keep track of your progress.</p>
+          <p>Explore the course curriculum and choose your next step.</p>
           {auth.status === 'loading' ? (
             <Loading label="Checking your session…" />
           ) : auth.error ? (
@@ -343,37 +336,23 @@ export function CoursePage() {
               </Link>
             </>
           ) : auth.user.role === 'student' ? (
-            <button
-              className="button primary full-width"
-              disabled={enrollment.isPending}
-              onClick={() => enrollment.mutate(c.id)}
+            <StudentCourseAction
+              key={`${auth.user.id}:${auth.epoch}:${c.id}`}
+              course={c}
+              userId={auth.user.id}
+            />
+          ) : auth.user.role === 'admin' ? (
+            <Link
+              className="button secondary full-width"
+              to={`/admin/courses/${c.id}`}
             >
-              {enrollment.isPending
-                ? 'Opening your course…'
-                : 'Enroll and start learning'}
-              <ArrowRight size={18} aria-hidden="true" />
-            </button>
+              Manage Course
+            </Link>
           ) : (
-            <>
-              <p className="small">
-                Learning enrollment is available to student accounts.
-              </p>
-              <Link
-                className="button secondary"
-                to={
-                  auth.user.role === 'admin'
-                    ? '/admin/courses'
-                    : '/instructor/courses'
-                }
-              >
-                Go to workspace
-              </Link>
-            </>
-          )}
-          {enrollment.isError && (
-            <ErrorPanel
-              error={enrollment.error}
-              retry={() => enrollment.mutate(c.id)}
+            <InstructorCourseAction
+              key={`${auth.user.id}:${auth.epoch}:${c.id}`}
+              courseId={c.id}
+              userId={auth.user.id}
             />
           )}
           <p className="small muted">
@@ -381,6 +360,128 @@ export function CoursePage() {
           </p>
         </aside>
       </div>
+    </>
+  );
+}
+function StudentCourseAction({
+  course,
+  userId,
+}: {
+  course: PublicCourseDetail;
+  userId: string;
+}) {
+  const client = useQueryClient();
+  const navigate = useNavigate();
+  const active = useRef(true);
+  const enrollmentPending = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => {
+      active.current = false;
+    };
+  }, []);
+  const access = useQuery({
+    queryKey: ['student', userId, 'course', course.id],
+    queryFn: ({ signal }) => api.studentCourse(course.id, signal),
+    enabled: !!userId && !!course.id,
+    retry: false,
+  });
+  const enrollment = useMutation({
+    mutationFn: () => api.enroll(course.id),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ['student', userId] });
+      if (active.current) navigate(`/learn/${course.id}`);
+    },
+    onSettled: () => {
+      enrollmentPending.current = false;
+    },
+  });
+  const enroll = () => {
+    if (enrollmentPending.current || enrollment.isPending) return;
+    enrollmentPending.current = true;
+    enrollment.mutate();
+  };
+  if (access.isPending) return <Loading label="Checking your enrollment…" />;
+  if (
+    access.isError &&
+    !(isApiError(access.error) && access.error.status === 404)
+  )
+    return (
+      <ErrorPanel error={access.error} retry={() => void access.refetch()} />
+    );
+  if (access.data && !access.isError) {
+    const completed =
+      access.data.is_completed ||
+      (access.data.total_lessons > 0 &&
+        access.data.completed_lessons >= access.data.total_lessons);
+    const label = completed
+      ? 'Review Course'
+      : access.data.completed_lessons > 0
+        ? 'Continue Learning'
+        : 'Start Learning';
+    return (
+      <Link className="button primary full-width" to={`/learn/${course.id}`}>
+        {label}
+        <ArrowRight size={18} aria-hidden="true" />
+      </Link>
+    );
+  }
+  return (
+    <>
+      <button
+        className="button primary full-width"
+        disabled={enrollment.isPending}
+        onClick={enroll}
+      >
+        {enrollment.isPending
+          ? 'Opening your course…'
+          : 'Enroll and Start Learning'}
+        <ArrowRight size={18} aria-hidden="true" />
+      </button>
+      {enrollment.isError && (
+        <ErrorPanel error={enrollment.error} retry={enroll} />
+      )}
+    </>
+  );
+}
+function InstructorCourseAction({
+  courseId,
+  userId,
+}: {
+  courseId: string;
+  userId: string;
+}) {
+  const access = useQuery({
+    queryKey: ['author', userId, 'course', courseId],
+    queryFn: ({ signal }) => api.managementCourse(courseId, false, signal),
+    enabled: !!userId && !!courseId,
+    retry: false,
+  });
+  if (access.isPending) return <Loading label="Checking course access…" />;
+  if (
+    access.isError &&
+    !(isApiError(access.error) && [403, 404].includes(access.error.status))
+  )
+    return (
+      <ErrorPanel error={access.error} retry={() => void access.refetch()} />
+    );
+  if (access.data?.instructor_id === userId && !access.isError)
+    return (
+      <Link
+        className="button secondary full-width"
+        to={`/instructor/courses/${courseId}`}
+      >
+        Manage Course
+      </Link>
+    );
+  return (
+    <>
+      <p className="small">
+        Learning enrollment is available to student accounts.
+      </p>
+      <Link className="button secondary" to="/instructor/courses">
+        Go to workspace
+      </Link>
     </>
   );
 }
