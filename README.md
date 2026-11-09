@@ -1,10 +1,176 @@
 # EduFlow LMS
 
-A backend-first learning management system built as a modular monolith. Phases 1–4 provide authentication, course management, enrollment and learning progress. Phases 5A–5B provide the React application: public catalog, authentication, student learning, instructor course/curriculum authoring and statistics, and admin publication moderation.
+## Overview
 
-## Run the frontend
+EduFlow is a full-stack learning management system for discovering courses, learning through structured lessons, and publishing curriculum. It combines a responsive React application with a FastAPI modular monolith and PostgreSQL.
 
-Requirements: Node.js 24 LTS, npm, and the running EduFlow API below. In another terminal:
+Built as a portfolio project, EduFlow demonstrates complete student, instructor and administrator workflows backed by real API data, explicit authorization and database integrity rules.
+
+## Live Demo
+
+**[Explore EduFlow](https://eduflow-lms-topaz.vercel.app)** · [Source code](https://github.com/ga1ssaa/eduflow-lms)
+
+The portfolio is deployed on Vercel, Render and Neon. The backend can sleep when inactive, so the first API request may take longer or need a retry. Current working-branch polish and screenshots may precede publication to the live deployment.
+
+Registration creates a student account. Instructor and administrator access require explicitly provisioned accounts; no shared credentials or default privileged account are published.
+
+## Features
+
+### Student
+
+- Register, sign in, and restore a session after reloading.
+- Browse published courses with title search, category and level filters, incremental loading and a manual Load More fallback.
+- Review course details and curriculum, enroll, and access protected lessons.
+- Read lesson content, watch optional external videos, and mark lessons complete or incomplete.
+- Use the Student Dashboard to track enrolled, in-progress and completed courses with progress calculated from actual lesson records.
+- Enter courses through **Start Learning**, **Continue Learning** or **Review Course**, according to saved progress.
+
+### Instructor
+
+- Manage owned content from the Instructor Dashboard.
+- Create and edit owned courses, modules and lessons, including text and external video links.
+- Order curriculum, publish or unpublish courses, and delete eligible drafts.
+- Review course enrollment, learner progress and course-level statistics.
+- Keep unsaved input through failed saves, with navigation warnings and explicit conflict feedback.
+
+### Admin
+
+- Review the full course catalog, including drafts, with real publication counts and filters.
+- Inspect course content and moderate publication under the same server-side validation rules.
+- Access authorized course-management views. User and role management are outside the implemented UI/API.
+
+### UI
+
+- Responsive public discovery pages and role-specific learning/authoring workspaces.
+- Light, Dark and System themes with coordinated Sunrise/Sunset Hero transitions.
+- Cinematic scroll reveals with reduced-motion support.
+- A shared responsive footer and consistent role-aware navigation.
+- Keyboard-accessible controls, visible focus, contextual loading, empty and error states.
+- Session recovery and role-aware navigation without exposing private lesson content publicly.
+
+## Screenshots
+
+Captured at **1440 × 900** from the current local portfolio build, using fictitious accounts and seeded courses in disposable local PostgreSQL. Enrollment and progress come from real API records, not production data; the shown revision may be newer than the live site.
+
+### Home Page
+
+![EduFlow Home Page — Dark Mode](docs/screenshots/home-dark.png)
+
+### Explore Courses
+
+![EduFlow Course Catalog — Dark Mode](docs/screenshots/catalog-dark.png)
+
+### Student Dashboard
+
+![EduFlow Student Dashboard — Dark Mode](docs/screenshots/student-dashboard-dark.png)
+
+<details>
+<summary>View More Screenshots</summary>
+
+### Course Details · Dark
+
+![Course details and curriculum in dark mode](docs/screenshots/course-details-dark.png)
+
+### Instructor Dashboard · Dark
+
+![Instructor course-management dashboard in dark mode](docs/screenshots/instructor-dashboard-dark.png)
+
+### Learning Experience · Dark
+
+![Protected lesson reading and completion view in dark mode](docs/screenshots/learning-experience-dark.png)
+
+### Home · Light
+
+![EduFlow home page in light mode](docs/screenshots/home-light.png)
+
+### Course Catalog · Light
+
+![Course catalog in light mode](docs/screenshots/catalog-light.png)
+
+</details>
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["React + Vite client"] --> Vercel["Vercel · frontend + same-origin API proxy"]
+    Vercel -->|"/api/v1 · HTTPS"| API["FastAPI · Docker on Render"]
+    API -->|"SQLAlchemy + psycopg · TLS"| DB[("PostgreSQL · Neon")]
+```
+
+The backend is a synchronous modular monolith with separate authentication, course and learning modules. HTTP routers validate contracts, services enforce business rules and transaction boundaries, repositories encapsulate queries, and request-scoped sessions access PostgreSQL. Alembic manages explicit schema changes.
+
+Course ownership, publication state and enrolled-student access are checked on the server. Unique constraints, foreign keys, row locks and learning-integrity triggers protect enrollment and completion records. Progress is derived from current lessons rather than stored as a second mutable total.
+
+The browser calls the relative `/api/v1` URL. Vercel proxies API requests to Render while retaining the frontend origin for refresh cookies. Local Vite provides the equivalent development proxy.
+
+## Tech Stack
+
+| Area                | Technology                                                           |
+| ------------------- | -------------------------------------------------------------------- |
+| Frontend            | React 19, TypeScript, Vite 8, React Router 7                         |
+| UI and server state | Tailwind CSS 4, shared CSS components, Lucide, TanStack Query 5      |
+| Backend             | Python 3.12+, FastAPI, Pydantic 2, Uvicorn                           |
+| Persistence         | PostgreSQL 17, SQLAlchemy 2 synchronous sessions, psycopg 3, Alembic |
+| Authentication      | JWT access tokens, rotating refresh sessions, Argon2id               |
+| Verification        | pytest, Ruff, Vitest, Testing Library, Playwright, ESLint, Prettier  |
+| Infrastructure      | Docker Compose, GitHub Actions, Vercel, Render, Neon                 |
+
+Python 3.13 and Node.js 24 are used by the container/CI and frontend CI respectively. Dependencies are locked separately for the backend and frontend.
+
+## Deployment
+
+The portfolio uses **Vercel Hobby** for the frontend and same-origin `/api/v1` proxy, **Render Free** for the Docker API, and **Neon Free** for PostgreSQL. Cold starts and external video availability affect the demo experience.
+
+Production setup uses private environment settings, explicit trusted HTTPS origins and a pooled runtime database URL. Remote schema changes use a separately approved **DIRECT** database connection. See the [deployment guide](docs/deployment.md) for environment configuration, API rewrites, migrations and release verification, and [Demo videos](docs/demo-videos.md) for external-media details. Provider limits and live settings require independent verification; no pricing or quota is assumed here.
+
+## Local Development
+
+Requirements: Git, Docker with Compose, Python 3 for one-time secret generation, and Node.js 24 LTS with npm. These steps target a fresh **local development** database only.
+
+### 1. Clone and configure
+
+```sh
+git clone https://github.com/ga1ssaa/eduflow-lms.git
+cd eduflow-lms
+cp .env.example .env
+```
+
+On an existing checkout, preserve its `.env` instead of overwriting it. Generate the signing secret directly into that ignored file without printing it; an existing nonempty secret is retained:
+
+```sh
+python3 - <<'PY'
+from pathlib import Path
+import secrets
+
+path = Path('.env')
+content = path.read_text()
+if not any(line.startswith('JWT_SECRET=') and line.partition('=')[2].strip()
+           for line in content.splitlines()):
+    content = '\n'.join(line for line in content.splitlines()
+                        if not line.startswith('JWT_SECRET='))
+    path.write_text(content + '\nJWT_SECRET=' + secrets.token_urlsafe(48) + '\n')
+path.chmod(0o600)
+PY
+```
+
+Example database credentials are local placeholders. Do not reuse them for a shared deployment or commit a real `.env`.
+
+### 2. Start the API and apply local migrations
+
+```sh
+docker compose up --build -d --wait
+docker compose exec backend alembic upgrade head
+docker compose exec backend alembic current
+curl --fail http://127.0.0.1:8000/api/v1/health
+curl --fail http://127.0.0.1:8000/api/v1/health/db
+```
+
+Both health checks return `{"status":"ok"}`. The API is at <http://127.0.0.1:8000>; interactive documentation is at <http://127.0.0.1:8000/docs>. PostgreSQL stays inside the Compose network, with a persistent named volume. Migrations never run automatically at application startup; do not remove database volumes to resolve configuration issues.
+
+### 3. Start the frontend
+
+In another terminal, from the cloned repository root:
 
 ```sh
 cd frontend
@@ -12,19 +178,34 @@ npm ci
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173>. Vite proxies `/api` to `http://127.0.0.1:8000`, preserving the browser Origin for backend CSRF validation. Stay on the same hostname for cookies. No frontend environment file is required; optional overrides are in `frontend/.env.example`. If the API port changes, set `EDUFLOW_API_PROXY_TARGET` to its local URL. `VITE_*` settings are public browser configuration and must never contain secrets.
+Open <http://127.0.0.1:5173>. No frontend environment file is required. Stay on the same hostname for cookie-based session recovery. Optional public settings and backend-only local development are explained in the [development guide](docs/development.md).
 
-The existing `/` route is the landing page with real featured courses; `/courses` retains the approved searchable, incrementally loaded catalog. All remaining pages share floating navigation, icon-based Light/Dark/System selection, and calmer learning/authoring surfaces. `/learning` combines the student dashboard and enrolled courses. The frontend uses the real API and shows empty states when no courses exist. Registration creates students only. Instructor/admin accounts must already have the appropriate backend role; there is no user-management endpoint or default account.
+The database starts without accounts or courses. Register a student through the UI; explicitly provision privileged local accounts and inspect the demo seed before applying it, following the development guide.
 
-Instructors land on `/instructor`. Create courses at `/instructor/courses/new`, edit details at `/instructor/courses/:courseId/edit`, manage modules/lessons at `/instructor/courses/:courseId/curriculum`, and view learner progress at `/instructor/courses/:courseId/students`. Course overview pages provide confirmed publish/unpublish and draft deletion. Curriculum ordering uses explicit up/down controls and submits the complete current ID list. Slugs are editable but are not regenerated when a title changes. Text content is plain text; videos use external HTTP(S) links.
+## Demo Content
 
-Unsaved forms warn before page unload, route navigation, browser history navigation, and explicit sign-out. Inputs survive failed saves and background refetch failures. PATCH sends only changed fields; clearing a lesson video sends `null`. Publication and learning-record deletion restrictions remain server-enforced. Refresh after a 409 conflict and review the preserved inputs before retrying. Changing an existing slug changes its public course URL.
+The original manifest contains **8 courses, 21 modules and 63 lessons** with explanations, examples and exercises. It uses deterministic identities and does not create accounts or run at startup. These courses supplement the catalog; they are not a product limit.
 
-Admins land on `/admin`, with actual total/published/draft counts, course search/filtering, full course review and confirmed publication moderation. No global user statistics or fake user-management controls exist. Dashboard course counts come from bounded paginated API queries. Enrollment/completion counts are shown per course: the API has no instructor-wide enrollment aggregate, so the dashboard does not issue a statistics request for every course or invent a global number. A student enrolled in two courses contributes one enrollment to each course's statistics.
+Three supplementary **CC BY 3.0** videos with plaintext attribution have been attached in **local development only**:
 
-Access tokens stay in memory. Refresh cookies remain HttpOnly; auth POSTs include credentials and the CSRF marker. Session recovery serializes cookie operations, shares refreshes within a tab, and uses Web Locks where supported across tabs. Older browsers without Web Locks may reject a racing refresh safely and require sign-in again. Logout cancels private requests and clears cached data; failed server revocation offers a sign-out retry. Light/dark/system selection is the only persisted browser preference.
+- Python Fundamentals → **Names and Values**.
+- Git & GitHub Workflow → **Focused Commits**.
+- Web Development Foundations → **Semantic HTML**.
 
-The effective theme is resolved in the document head before React starts. Initial entry and refresh show it immediately without theme motion. On Home and Explore Courses, one 1.6-second scene timeline coordinates the actual Hero's viewport-sized 2D trajectory with a directional reveal of the existing destination gradients, lighting, and pixels. The Hero stays full-size and upright. Sunrise brings it from beyond the bottom-left viewport into its original position; sunset moves it beyond the bottom-right before the destination Hero's gentle centered entrance. Temporary atmosphere layers conceal the underlying palette handoff and are removed at completion. System follows OS changes; routes without a visible Hero, reduced motion, and unavailable animation support switch immediately. Client-side navigation does not replay the scene. Theme selection preserves route, focus, scroll position, and application state.
+This does not establish production attachment. Media sources, caption limitations and guarded attachment instructions are documented in [Demo videos](docs/demo-videos.md).
+
+## Security
+
+- Short-lived JWT access tokens stay in memory; rotating refresh tokens use HttpOnly cookies. Production settings require Secure cookies, scoped to auth routes; only refresh-token hashes are stored.
+- Passwords use Argon2id. Public registration always creates students; current active roles and course ownership are enforced server-side.
+- Auth POST requests require an exact trusted Origin and `X-CSRF-Token: 1`; CORS uses explicit origins. The hosted same-origin proxy preserves cookie and CSRF behavior.
+- Production setup requires HTTPS origins and TLS-enabled Neon connection settings; live configuration is verified separately. Secrets remain outside tracked files and frontend bundles.
+
+Configuration and operational details are in [Development](docs/development.md#authentication-and-local-accounts) and [Deployment](docs/deployment.md).
+
+## Testing
+
+Frontend checks:
 
 ```sh
 cd frontend
@@ -35,305 +216,7 @@ npm test
 npm run build
 ```
 
-`npm run preview` serves the built app on port 4173. Authentication on that port requires adding its exact origin to the backend allowlist; the normal development workflow uses port 5173. Hosted deployment uses the same-origin API proxy described below. Nothing is deployed by these commands.
-
-## Planned hosting: Render Free, Neon Free, Vercel Hobby
-
-These files prepare a personal, non-commercial portfolio deployment; they do not create resources. Obtain approval before creating resources, running remote migrations, provisioning accounts, or deploying. Existing local development data is not transferred or changed. Azure and the Finance Dashboard on Heroku are not involved.
-
-### Free-tier limits and runtime
-
-- [Render Free](https://render.com/docs/free): one Docker web service, 512 MB RAM, idle suspension after 15 minutes, approximately one-minute wake-up, ephemeral local files, and 750 workspace-wide instance hours/month. Included build minutes and outbound bandwidth also apply. Free services have no shell access, one-off jobs, or pre-deploy command support. Use Neon, not Render's expiring Free Postgres. See [Render pricing](https://render.com/pricing) for current allowances.
-- [Neon Free](https://neon.com/pricing): currently 100 CU-hours/month/project and 1 GB storage/project; network-transfer limits also apply. Choose the smallest compute and retain automatic suspension. A pooled connection does not make compute or transfer unlimited. Monitor usage in the Neon console.
-- [Vercel Hobby](https://vercel.com/docs/plans/hobby): $0 for personal, non-commercial use within included limits. Use the free `vercel.app` domain and no paid integrations. Stay on Free/Hobby plans, avoid paid upgrades, and monitor each provider's usage dashboard. Suspension or exhausted quotas are possible; this is a demo hosting arrangement, not an uptime guarantee.
-
-`render.yaml` defines only a Free Docker service in Frankfurt, with automatic redeploys disabled. The existing non-root, production-only runtime listens on `0.0.0.0:${PORT:-8000}` (Render supplies `PORT`). No registry, persistent disk, background worker, or Docker image publication is needed; Render builds `backend/Dockerfile` from the repository. Do not override its start command or add migrations to startup.
-
-The Blueprint sets `WEB_CONCURRENCY=1` and `UVICORN_LIMIT_CONCURRENCY=4` in the process environment. Argon2id uses approximately 64 MiB per simultaneous password hash; unrestricted concurrent login/registration is unsafe on 512 MB. The Uvicorn bound limits accepted concurrent connections/tasks and returns 503 under excess load, including potentially during parallel catalog calls. It is a conservative demo setting, not a load-test guarantee or a rate limiter. Confirm actual Render memory and CPU metrics after deployment before increasing it. No password-hashing security parameters are reduced.
-
-Use `/api/v1/health` for Render's liveness check so health polling does not wake Neon continuously. Verify `/api/v1/health/db` separately after migration/deployment. Sleeping services can cause first-request delays, proxy error pages, or transient database failures; retry after wake-up. Vercel's [external proxy timeout](https://vercel.com/docs/limits) is 120 seconds. Do not use artificial keep-alive polling to defeat free-tier suspension.
-
-### Required environment configuration
-
-Set these in Render's environment dashboard; never enter credentials in Git, URLs shared in chat, command arguments, or build logs. `sync: false` values in the Blueprint must be supplied explicitly.
-
-| Variable | Production value |
-| --- | --- |
-| `ENVIRONMENT` | `production` |
-| `DATABASE_URL` | Neon **pooled** PostgreSQL URL, including its TLS parameters |
-| `JWT_SECRET` | Unique random secret of at least 32 non-padding characters, stored privately and kept stable across redeploys |
-| `AUTH_ALLOWED_ORIGINS` | JSON array containing only the actual stable HTTPS frontend origin, e.g. `["https://YOUR-PROJECT.vercel.app"]` |
-| `CORS_ORIGINS` | Same explicit HTTPS origin array; never wildcard or an origin with a trailing slash |
-| `REFRESH_COOKIE_SECURE` | `true` |
-| `REFRESH_COOKIE_SAMESITE` | `lax` (same-origin proxy) |
-| `REFRESH_COOKIE_NAME` | `eduflow_refresh` |
-| `JWT_ISSUER` | `eduflow` |
-| `ACCESS_TOKEN_MINUTES` / `REFRESH_TOKEN_DAYS` | `15` / `7` |
-| `DATABASE_CONNECT_TIMEOUT` | `15` seconds, to allow a sleeping Neon compute to wake |
-| `WEB_CONCURRENCY` / `UVICORN_LIMIT_CONCURRENCY` | `1` / `4`, as above |
-| `PORT` | Supplied by Render; do not replace with localhost or hardcode a different port |
-
-Vercel: Root Directory `frontend`, Node.js **24.x**, framework Vite, build `npm run build`, output `dist`, and public `VITE_API_BASE_URL=/api/v1`. No backend secrets belong in Vercel or `VITE_*`. `EDUFLOW_API_PROXY_TARGET` configures local Vite only and does not configure Vercel.
-
-### Neon TLS, pooling, and migrations
-
-Create a separate empty Neon Free project/database after approval; never point it at the existing development database. Prefer Frankfurt for both services when available. Copy the pooled and direct connection strings privately from Neon's Connect dialog. The application accepts `postgres://`, `postgresql://`, and `postgresql+psycopg://`; settings normalize them to the synchronous psycopg 3 driver and preserve URL query parameters. Keep Neon's `sslmode=require&channel_binding=require` parameters (or a verified stricter TLS configuration); never disable TLS. Password characters must be URL-encoded.
-
-Use the `-pooler` hostname for the application's `DATABASE_URL`. Existing SQLAlchemy `pool_pre_ping` checks stale connections; the default pool has five persistent slots and ten overflow slots per process, opened lazily. The deployment's single worker and bounded request concurrency constrain use. Neon uses PgBouncer transaction pooling and supports driver protocol-level prepared statements; the app does not use SQL `PREPARE`, session advisory locks, or session-local state. See [Neon pooling](https://neon.com/docs/connect/connection-pooling).
-
-For Alembic use the **direct** hostname, not `-pooler`; migrations already use `NullPool` and do not run at startup. Run the following only after verifying and approving the new remote target. In a separate local terminal, load production settings from a private environment file outside the repository using a trusted secret loader, with `DATABASE_URL` set to the **direct** URL. Do not overwrite the root or backend development `.env`. All production validation rules above still apply. From `backend/`:
-
-```sh
-uv sync --locked
-uv run --locked alembic current
-uv run --locked alembic upgrade head
-uv run --locked alembic current
-uv run --locked alembic check
-```
-
-These are future remote database operations, not verification commands to run during preparation. Run migrations once from the intended release before starting that release. Do not use `stamp`, downgrades, resets, or automatic startup migrations. Do not use the pooled Render environment for this maintenance terminal.
-
-### Deployment sequence (approval required)
-
-1. Review and approve the configuration, then separately approve the desired Git publication. No commit or push is performed by preparation. Keep all local data intact.
-2. Select Vercel Hobby and the intended stable `vercel.app` origin without enabling paid add-ons. Do not route visitors or run authentication until the backend proxy and allowlist are ready. Preview deployment origins are not automatically trusted; do not give arbitrary previews production database access.
-3. Create the empty Neon Free project/database, save both TLS URLs in a private secret store, and verify its identity before executing the explicit direct-URL migration commands above. Monitor Free storage, compute, and transfer usage.
-4. Create the Render Free Docker service using `render.yaml` from the approved branch, supply the required environment values, and review the Free plan before confirming creation. Blueprint import starts the initial deployment even with automatic redeploys off. Do not configure a pre-deploy command, disk, paid instance, or Render database. Confirm both health endpoints after startup and note the actual assigned HTTPS `onrender.com` hostname.
-5. Copy `frontend/vercel.json.example` to `frontend/vercel.json` and replace **only** `replace-with-render-host.invalid` with that actual Render hostname. The template intentionally uses a non-routable placeholder; Vercel does not automatically consume `.example` files or interpolate environment variables in this JSON. Review the resulting file before the separately approved frontend deployment. API rewrites precede the SPA fallback, which excludes `/api` so API failures do not become HTML page responses. Static assets remain served normally.
-6. Deploy the approved frontend to Vercel with the settings above. The rewrite preserves `/api/v1`, query strings, methods, and bodies. API response caching is explicitly disabled, including private/auth responses. Keep access tokens in memory and the refresh cookie HttpOnly, host-only, Secure, and scoped to `/api/v1/auth`. Do not add a cookie Domain or strip `Origin`, `Cookie`, `Authorization`, `X-CSRF-Token`, or `Set-Cookie`. Auth POSTs still require the exact frontend `Origin` and `X-CSRF-Token: 1`; never weaken CSRF to make a proxy work.
-7. Through the frontend origin, verify both health endpoints, registration/login, 204 logout, cookie creation/clearing, refresh rotation after reload, authenticated routes, enrollment, progress, and authoring with explicitly approved disposable accounts. Confirm browser cookies belong to the frontend host, API responses are not cached, and upstream failures are handled. Compare direct Render and proxied health responses. Live proxy/cookie behavior remains unverified until this step.
-8. If an initial admin is required, use the existing `python -m app.cli create-admin --email YOUR-ADDRESS --full-name "Your Name"` from a trusted local backend terminal with the privately loaded direct production URL and `ENVIRONMENT=production`, after separate approval. It prompts securely and rejects existing users. Render Free has no interactive shell. Public registration remains student-only. Instructor creation and demo seeding are development-only; do not bypass that guard or point development tools at Neon production. Existing demo courses/accounts are not automatically published or imported. A production instructor/data-import procedure needs separate review before an authoring demo.
-
-No resources, migrations, accounts, database writes, or deployments are performed by adding this configuration.
-
-Optional real-API browser tests use `npm run test:e2e` after `npx playwright install chromium`. They require Vite on port 5173 pointed at a separate API using an isolated `eduflow_test_*` PostgreSQL database. Set `EDUFLOW_E2E_FIXTURE_FILE` to a private JSON file containing `student`, `instructor`, and `admin` accounts (`email`, `password`) plus `course` and `draft` (`id`, `slug`, `title`). The student full name must be `Frontend Student`. The published course needs two ordered text lessons containing `Private lesson 1.` and `Private lesson 2.` respectively; the draft must satisfy publication rules. Keep this file outside Git with mode 0600; never use development or production accounts. The authoring test creates unique courses through the UI, reorders modules/lessons, verifies student learning and statistics, and confirms moderation/deletion safeguards. Tests create and modify isolated records but never reset databases. Without fixtures they explicitly skip. Browser traces/video are disabled to avoid capturing token responses.
-
-## Run with Docker
-
-Requirements: Docker Desktop (or Docker Engine with Compose), Git. Run from the repository root:
-
-```sh
-cp .env.example .env
-```
-
-Generate the signing secret directly into the ignored `.env` without printing it. This preserves an existing nonempty secret:
-
-```sh
-python3 - <<'PY'
-from pathlib import Path
-import secrets
-path = Path('.env')
-content = path.read_text()
-if not any(line.startswith('JWT_SECRET=') and line.partition('=')[2].strip()
-           for line in content.splitlines()):
-    content = '\n'.join(line for line in content.splitlines()
-                        if not line.startswith('JWT_SECRET='))
-    path.write_text(content + '\nJWT_SECRET=' + secrets.token_urlsafe(48) + '\n')
-path.chmod(0o600)
-PY
-docker compose up --build -d --wait
-docker compose exec backend alembic upgrade head
-docker compose exec backend alembic current
-curl --fail http://localhost:8000/api/v1/health
-curl --fail http://localhost:8000/api/v1/health/db
-```
-
-Both endpoints return `{"status":"ok"}` with HTTP 200. The database endpoint executes `SELECT 1` and returns HTTP 503 with `{"detail":"Database unavailable"}` if PostgreSQL is unreachable. API documentation: <http://localhost:8000/docs>; OpenAPI: <http://localhost:8000/openapi.json>.
-
-The example credentials are public placeholders for local development. Keep real credentials in ignored `.env` files. When changing the database user or password, update `DATABASE_URL` too; URL-encode special characters in URL credentials. PostgreSQL credentials are initialized only when its volume is first created. Changing environment variables does not change an existing database user's password.
-
-Only the API is published, on `127.0.0.1:8000`. PostgreSQL is available to the backend at `postgres:5432` on the Compose network. Change `BACKEND_PORT` in `.env` if port 8000 is occupied.
-
-```sh
-docker compose ps
-docker compose logs backend
-docker compose logs postgres
-docker compose exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1"'
-docker compose stop
-```
-
-The named `postgres_data` volume persists between restarts. Do not remove it or use volume deletion commands without explicit approval. Migrations run explicitly; application startup never creates tables. Migration `0001` establishes the baseline; `0002` adds identity; `0003` adds curriculum; `0004` adds enrollments, lesson progress, and integrity triggers. Downgrading feature migrations deletes their tables and must never be used on valuable data without approval.
-
-## Authentication
-
-| Endpoint | Contract |
-| --- | --- |
-| `POST /api/v1/auth/register` | JSON `email`, `password`, `full_name`; returns safe user fields with 201. Always creates a student; extra fields such as `role` are rejected. |
-| `POST /api/v1/auth/login` | JSON `email`, `password`; returns `access_token`, `token_type`, `expires_in` and sets the refresh cookie. |
-| `POST /api/v1/auth/refresh` | Uses the refresh cookie; returns a new access token and replaces the refresh cookie. The old token immediately becomes unusable. |
-| `POST /api/v1/auth/logout` | Revokes the presented refresh session and clears its cookie; returns 204. Already issued access tokens remain valid until expiry unless the user becomes inactive. |
-| `GET /api/v1/users/me` | Requires `Authorization: Bearer <access token>`; returns safe user fields. |
-
-Emails are trimmed and normalized to lowercase. Full names contain 2–100 characters after trimming. Registration passwords contain 12–128 characters, including a letter and a non-space nonletter. Passwords use Argon2id. Unknown accounts and incorrect passwords receive the same authentication error. Password hashes and refresh-session details are never returned.
-
-Every POST above requires **both** an exact allowlisted `Origin` and `X-CSRF-Token: 1`, including registration and login. Missing or untrusted origins and missing headers receive 403. The custom header forces browser preflight; strict CORS and Origin checks prevent cross-origin cookie requests. The header is a fixed request marker, not a secret. API tools must send these headers too. The default allowlist includes `http://localhost:8000` for local API documentation and port 5173 for the future frontend; Swagger's Try it out needs the CSRF header. Never configure wildcard or untrusted origins.
-
-The future browser client should send `credentials: "include"` for login, refresh, and logout, keep access tokens in memory, and let the browser manage the HttpOnly refresh cookie. Never put refresh tokens in localStorage. Refresh tokens are high-entropy random values; only SHA-256 hashes are stored. Rotation locks the existing session row and commits revocation and replacement together, so only one concurrent attempt succeeds. An old-token replay is rejected; it does not invalidate the separately issued replacement session.
-
-Access JWTs use HS256 and validate signature, expiration, issuer, subject, and access-token type. Authorization loads current user state from PostgreSQL. `get_current_user` and `require_role(*roles)` live in `app.auth.dependencies`; pass the explicitly allowed roles. Admin does not implicitly inherit instructor access. No public role-management or role-test endpoints exist.
-
-### Configuration and administrator bootstrap
-
-`JWT_SECRET` is required and must contain at least 32 characters. Keep it private and stable across restarts. `JWT_ISSUER`, `ACCESS_TOKEN_MINUTES` (default 15), and `REFRESH_TOKEN_DAYS` (default 7) are independently configurable. Cookie settings are `REFRESH_COOKIE_NAME`, `REFRESH_COOKIE_SECURE`, and `REFRESH_COOKIE_SAMESITE`; the cookie is host-only with path `/api/v1/auth`. CORS origins and auth origins are explicit JSON arrays in `.env`.
-
-Local HTTP development uses `ENVIRONMENT=development`, Secure=false, and SameSite=lax. Production requires HTTPS, `ENVIRONMENT=production`, Secure=true, and exact HTTPS origins. SameSite=none requires Secure=true and is needed only when the eventual frontend is cross-site. All modes retain CSRF checks. A secret change invalidates access JWTs but does not revoke refresh sessions. Revoke sessions separately when handling a compromise.
-
-Create the initial administrator explicitly after migrations:
-
-```sh
-docker compose exec backend python -m app.cli create-admin --email your-address@example.com --full-name "Your Name"
-```
-
-The CLI prompts for the password and confirmation without echoing it and requires a terminal. It refuses existing accounts and never silently promotes a student. There is no default administrator and no startup bootstrap. Do not pass passwords through command arguments or shell history.
-
-To explicitly provision a **new local development instructor**, use the same interactive CLI:
-
-```sh
-docker compose exec backend python -m app.cli create-instructor --email instructor@example.com --full-name "Development Instructor"
-```
-
-Replace the example email and name. Verify that the configured database is local development first, and use a backend image containing the command. `create-instructor` requires `ENVIRONMENT=development` and rejects all other environments before prompting or opening a database session. Password entry and confirmation are hidden; the existing registration validation and Argon2id hashing apply. Success prints the new instructor UUID for the demo seed. Duplicate accounts are rejected without modification or promotion. There is no password argument, automatic startup provisioning, or public instructor-registration endpoint. Public registration continues to create students only.
-
-### Dedicated production instructor (approval required)
-
-The separate `app.provision_production_instructor` maintenance command creates **one new active instructor** per explicitly approved invocation. It does not promote accounts, create an admin, create sessions, import courses, or change public registration/RBAC. Keep the development instructor command development-only. Obtain approval for the dedicated email/display name and production account creation before connecting; no email or password is supplied by the repository.
-
-Verify the DIRECT endpoint in Neon belongs to project `eduflow-production`, branch `production`, and the intended database. Load the existing production settings privately into a local interactive terminal environment, without changing development `.env`, Render settings, or Vercel. Required settings include `ENVIRONMENT=production`, DIRECT `DATABASE_URL` retaining TLS parameters, a valid privately supplied `JWT_SECRET`, `REFRESH_COOKIE_SECURE=true`, and explicit HTTPS origin lists. Do not put credentials in CLI arguments or shell history. Unset libpq `PG*` routing defaults. The same strict endpoint/TLS, effective public schema, and `0004_learning` checks as the course importer apply; the confirmation label attests the operator's project/branch verification and does not independently query Neon project metadata.
-
-From `backend/`, only after approval:
-
-```sh
-.venv/bin/python -m app.provision_production_instructor \
-  --email "<APPROVED_DEDICATED_INSTRUCTOR_EMAIL>" \
-  --full-name "<APPROVED_PUBLIC_DISPLAY_NAME>" \
-  --expected-host "<NEON_DIRECT_HOST>" \
-  --expected-database "<NEON_DATABASE_NAME>" \
-  --confirm-production-provisioning eduflow-production/production
-```
-
-Enter and confirm a unique password from a password manager at the **hidden interactive prompts**. There is no password argument or password environment-variable interface. Input refuses a non-interactive or echoing prompt. Existing `RegisterRequest` normalizes email and validates the display name/password; password policy remains 12–128 characters with a letter and a non-space non-letter. Prefer a generated password of at least 20 characters meeting that policy. The existing account service applies Argon2id hashing and unique-email enforcement. A duplicate normalized email, including an existing student account, is rejected without updates or promotion; the unique index also protects concurrent creation.
-
-The service's commit is enclosed in a savepoint inside one caller-owned transaction. Schema, creation, refresh, or pre-commit failures roll back the new account; existing users, sessions, courses, enrollments and progress remain untouched. Success exposes only the instructor UUID after the outer commit. If the final commit acknowledgement is lost, the result may be uncertain: obtain a read-only account verification before retrying, never promote or overwrite an existing account, and never assume a failed response proves no account exists. No account deletion/reset is provided.
-
-Record the returned UUID privately as the approved course owner. After separately approving read-only production access, use it for the course importer dry-run below; account provisioning does not start that import. Database-free tests check validation, hashing, duplicate refusal, target checks and transaction/error orchestration; they do not establish production connectivity or prove PostgreSQL savepoint behavior. An isolated PostgreSQL rehearsal is still needed before production execution.
-
-### Optional original demo curriculum
-
-The explicit demo seed contains 8 courses, 21 modules, and 63 short text lessons with explanations, examples, and exercises. All video URLs are null. It requires an **existing active instructor** UUID; it never creates accounts, promotes users, or runs at startup. No schema changes are needed. These are eight additional demo courses, not a limit on the catalog's total size.
-
-After configuring a local development database in `backend/.env` and ensuring the existing migrations are already applied, replace the UUID placeholder and inspect the plan:
-
-```sh
-cd backend
-uv run --locked python -m app.seed_demo_courses --instructor-id "<ACTIVE_INSTRUCTOR_UUID>" --dry-run
-```
-
-The command requires exactly one mode: `--dry-run` reads the selected database without adding, updating, publishing, or committing records; `--apply` explicitly creates and publishes missing demo courses. Both modes reject any `ENVIRONMENT` other than `development`. Check the configured database yourself before any future application; the environment label alone does not prove that a database is disposable. Do not target shared or production data.
-
-Stable UUIDs and reserved `demo-` slugs identify the manifest. An identical, published course and curriculum is skipped. A conflicting slug, renamed seed, changed owner, edited curriculum, or unpublished seed stops preflight without overwriting it. The script never repairs or deletes existing records. Each new complete course is committed through the existing publication service; if a later operation fails, that current course rolls back and earlier completed courses remain. Resolve conflicts deliberately and rerun to resume. PostgreSQL uniqueness constraints reject concurrent duplicate inserts. Publication exposes course summaries and curriculum outlines through the existing catalog; lesson bodies retain their existing protected access.
-
-The seed's focused unit tests use in-memory transaction doubles and never connect to any database:
-
-```sh
-uv run --locked python -m pytest tests/test_demo_seed.py
-```
-
-### Explicit production demo-course import (approval required)
-
-`python -m app.import_demo_courses` is a separate, production-only maintenance CLI. The development seed and instructor CLI retain their development-only guards. It imports the existing original manifest: Python Fundamentals, Modern React Development, UI/UX Design Essentials, SQL & PostgreSQL, and FastAPI Backend Development each have 3 modules/9 lessons; JavaScript Essentials, Git & GitHub Workflow, and Web Development Foundations each have 2 modules/6 lessons. Total: **8 courses, 21 modules, 63 text lessons**, all video URLs null. No accounts, credentials, sessions, enrollments, or progress are imported.
-
-Before any production connection, obtain approval and verify in Neon that the DIRECT endpoint belongs to project `eduflow-production`, branch `production`, and the intended database. The CLI cannot infer a Neon project/branch name from a PostgreSQL connection alone: its confirmation label is an operator attestation, while the expected host/database checks enforce the chosen endpoint. Use a trusted local terminal with the privately loaded production settings described above, `ENVIRONMENT=production`, a DIRECT TLS `DATABASE_URL`, and no libpq `PG*` routing overrides. Never change the development `.env`, pass the URL/password in command arguments, change Render settings, or set production to `development` to bypass safeguards. No migrations are run by the importer; revision `0004_learning` and the public schema are required.
-
-An **existing active instructor UUID** must be approved as the owner. All eight courses reference that user; the importer never creates users or changes roles. An existing dedicated content instructor can be reused. Otherwise, separately approve the dedicated production instructor procedure above. Public registration remains student-only; `create-instructor` remains development-only. Do not promote an existing student/admin, copy development accounts/password hashes, or create a placeholder account through SQL.
-
-After approving read-only production access, from `backend/`, substitute the actual instructor UUID, DIRECT hostname, and database name (not the Neon project name):
-
-```sh
-.venv/bin/python -m app.import_demo_courses \
-  --instructor-id "<ACTIVE_PRODUCTION_INSTRUCTOR_UUID>" \
-  --expected-host "<NEON_DIRECT_HOST>" \
-  --expected-database "<NEON_DATABASE_NAME>" \
-  --dry-run
-```
-
-Inspect the result before separately approving writes: a first empty demo namespace should report `would_create=8, skipped=0`. Any conflicting reserved slug/UUID, owner, curriculum, or publication status stops the operation; existing courses are never repaired or overwritten. Matching published records are skipped using the same deterministic UUIDs and full-content comparison as the development seed. Repeat runs must use the same instructor UUID and manifest.
-
-Only after approving writes, execute:
-
-```sh
-.venv/bin/python -m app.import_demo_courses \
-  --instructor-id "<ACTIVE_PRODUCTION_INSTRUCTOR_UUID>" \
-  --expected-host "<NEON_DIRECT_HOST>" \
-  --expected-database "<NEON_DATABASE_NAME>" \
-  --apply --confirm-production-import eduflow-production/production
-```
-
-Apply wraps the existing per-course publication service in **one outer database transaction**, with service commits contained in savepoints: a failure before commit rolls back the entire import, including earlier courses from this invocation. If the connection fails while acknowledging the final commit, its outcome may be uncertain; use a read-only dry-run to verify before retrying. Unique constraints prevent concurrent duplicates; after a competing import completes, rerun the dry-run rather than bypassing a conflict. Dry-run uses a read-only transaction and does not publish, commit, or change records. Course success output is emitted only after the outer commit.
-
-After a successful import, run the dry-run again: expect `would_create=0, skipped=8`. Verify the eight reserved `demo-` slugs in the public `/api/v1/courses` listing (following pagination) and each `/api/v1/courses/{slug}` detail. The existing publication service validates content, sets publication timestamps, and makes the courses visible; public responses still omit lesson bodies. Existing production users and their sessions/enrollments/progress remain untouched. No rollback-by-deletion is provided: if a successful import later needs removal, request a separate reviewed operation that respects enrollment/progress restrictions.
-
-Preparation tests use database-free doubles; they do not establish live Neon connectivity or prove PostgreSQL savepoint behavior. Run a separately approved isolated PostgreSQL rehearsal before the first production apply if this has not yet been verified.
-
-## Course management
-
-Management endpoints require a Bearer access token and load the user's current role and active state through the existing authentication dependencies. Instructors can access only their own courses. Admin access is explicitly allowed for management of any course; `/instructor/courses` still lists only the current user's courses, while `/admin/courses` lists all courses. There is no public role-promotion endpoint.
-
-All paths below start with `/api/v1`:
-
-| Method and path | Purpose |
-| --- | --- |
-| `POST /instructor/courses` | Create a draft owned by the authenticated instructor or admin. |
-| `GET /instructor/courses` | Paginated owned courses. |
-| `GET`, `PATCH`, `DELETE /instructor/courses/{course_id}` | View full authoring content, edit, or delete a draft. |
-| `POST /instructor/courses/{course_id}/publish`, `/unpublish` | Change publication state. |
-| `POST /instructor/courses/{course_id}/modules` | Append a module. |
-| `PATCH`, `DELETE /instructor/modules/{module_id}` | Edit or delete a module. |
-| `PUT /instructor/courses/{course_id}/modules/order` | Atomically reorder all modules. |
-| `POST /instructor/modules/{module_id}/lessons` | Append a lesson. |
-| `PATCH`, `DELETE /instructor/lessons/{lesson_id}` | Edit or delete a lesson. |
-| `PUT /instructor/modules/{module_id}/lessons/order` | Atomically reorder all lessons. |
-| `GET /courses`, `/courses/{slug}` | Public published catalog and curriculum outline. |
-| `GET /admin/courses`, `/admin/courses/{course_id}` | Admin-only listing and full details, including drafts. |
-| `POST /admin/courses/{course_id}/publish`, `/unpublish` | Admin-only publication moderation with the same validation. |
-
-Course creation requires `title` and `slug`; optional fields are `description`, `category`, and `level` (`beginner`, `intermediate`, `advanced`; default `beginner`). Slugs contain lowercase ASCII letters or digits separated by single hyphens, up to 200 characters. Slug conflicts return 409, including concurrent creation attempts. Title changes do not regenerate slugs. Public input cannot set `instructor_id` or publication state.
-
-Module creation takes `title`. Lesson creation takes `title`, optional `content`, and optional HTTP(S) `video_url`. PATCH changes only supplied fields; `video_url: null` clears the video. Positions are positive, server-assigned, and unique within a parent. Reorder bodies are `{"ids": ["<UUID>", "<UUID>"]}` and must contain exactly all current child IDs once. Parent-course row locks serialize structural edits; deferrable unique constraints let valid swaps commit atomically. No ordering library is used.
-
-Publishing requires a title, nonempty description and category, at least one module and one lesson, and a title plus content or valid video URL for every lesson. Repeated publish requests preserve the current publication date. Unpublish clears it; republishing sets a new date. Edits and deletions that would make a published course invalid are rejected and rolled back. Unpublish before deleting a published course. Courses with enrollments cannot be deleted. Lessons with completion records, and modules containing such lessons, cannot be deleted. For curriculum without learning records, explicit draft-course/module deletion retains its transactional cascade behavior.
-
-Public listings accept `page` (default 1), `page_size` (default 20, maximum 100), case-insensitive literal title `search`, exact `category`, and `level`. Responses contain `items`, `total`, `page`, and `page_size`, ordered by creation time descending and UUID ascending. Each item includes instructor name and module/lesson counts. Public details include ordered module and lesson titles; they never include lesson content or video URLs. Drafts return 404 publicly. Full student lesson content requires the enrolled-student endpoint below.
-
-Course mutations use Bearer authentication rather than ambient refresh cookies, so the auth endpoints' CSRF marker is not required for these routes. CORS allows the PATCH, PUT, and DELETE methods needed by a future browser client. Validation errors use 422, denied roles or ownership use 403, absent resources use 404, and business-state conflicts use 409.
-
-## Enrollment and learning
-
-All learning endpoints require a Bearer token and a current active `student` role. Instructors and admins use their existing authorized management endpoints for content access. Student IDs, completion counts, and percentages are never accepted from a client.
-
-| Endpoint | Behavior |
-| --- | --- |
-| `POST /api/v1/courses/{course_id}/enroll` | Enroll in a published course; repeated/concurrent requests return the same enrollment without duplicates. |
-| `GET /api/v1/students/me/courses` | Paginated own enrollments with course metadata, availability, enrollment dates, and progress. |
-| `GET /api/v1/students/me/courses/{course_id}` | Published enrolled course outline and own progress. |
-| `GET /api/v1/students/me/lessons/{lesson_id}` | Protected content/video, course/module context, and own completion state. |
-| `POST /api/v1/students/me/lessons/{lesson_id}/complete` | Idempotently mark complete and return current course progress. |
-| `DELETE /api/v1/students/me/lessons/{lesson_id}/complete` | Idempotently mark incomplete and return recalculated progress. |
-| `GET /api/v1/students/me/courses/{course_id}/progress` | Actual lesson/completion counts, percentage, and completion flag. |
-| `GET /api/v1/students/me/dashboard` | Enrolled/completed/in-progress course counts and enrollment progress summaries. |
-| `GET /api/v1/instructor/courses/{course_id}/students` | Paginated enrollment and student progress summaries; owner or admin only. |
-| `GET /api/v1/instructor/courses/{course_id}/stats` | Enrollment/completion counts and average progress; owner or admin only. |
-
-Enrollment and completion writes return HTTP 200, including repeats. Enrollment has no required body; extra identity fields are rejected. Completion responses include `lesson_id`, `is_completed`, `completed_at`, and a `progress` object. Missing, unenrolled, or unpublished protected resources return 404. Inactive accounts return 401; disallowed roles and cross-instructor statistics requests return 403.
-
-Progress counts only current lessons in the enrolled course. Percentages use decimal rounding to two places with `ROUND_HALF_UP`: 1/3 → 33.33, 2/3 → 66.67, 7/10 → 70. Zero lessons means 0% and `is_completed=false`; completion otherwise requires all lessons, independently of the rounded percentage. No percentage is stored. New lessons can turn a completed course into an in-progress course. Removing an uncompleted lesson reduces the denominator; removing completed lessons is blocked. Marking incomplete intentionally removes that completion record.
-
-Own course listings and dashboard retain enrollment metadata and numeric progress when a course is unpublished, with `is_available=false`; they expose no draft curriculum or lesson content. Course detail, lesson access, progress detail, and completion changes are blocked until republished. Dashboard in-progress counts include every enrolled course that is not complete, including courses with zero progress. Instructor statistics retain enrolled users even if their role or active state changes, without exposing authentication data.
-
-Course row locks coordinate learning writes with publication and curriculum edits. Protected detail reads hold shared locks while constructing response snapshots. Unique constraints prevent duplicate enrollments/completions; foreign keys preserve learning records. A PostgreSQL trigger rejects cross-course completion links, and parent-identity triggers prevent reparenting enrollments, modules, and lessons. There is no unenrollment or archival workflow in this phase.
-
-## Local Python development
-
-Requirements: Python 3.12+ and [uv](https://docs.astral.sh/uv/). The container and CI use Python 3.13.
+Backend checks, from the repository root:
 
 ```sh
 cd backend
@@ -343,51 +226,29 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-For local Uvicorn, set `DATABASE_URL` to a reachable **local development** PostgreSQL database using the `postgresql+psycopg://` scheme, either in your shell or in `backend/.env`. Settings read `.env` from the current working directory. The root Compose URL uses the hostname `postgres`, which does not resolve on the host; use a separate local PostgreSQL instance for this workflow. Do not point development commands at a shared or production database.
+The repository's unit/component, isolated PostgreSQL and optional browser suites cover:
 
-```sh
-uv run alembic upgrade head
-uv run python -m uvicorn app.main:create_app --factory --reload
-```
+- Student learning, instructor authoring and admin publication workflows.
+- Authentication/session recovery, enrollment, completion and derived progress.
+- Video controls, loading/error recovery and unsafe media URL rejection.
+- Responsive layouts, navigation, reduced motion and theme/reveal lifecycles.
+- Migration consistency, authorization and database integrity rules.
 
-Set a generated `JWT_SECRET` in the local Python environment or `backend/.env` too. Tests use doubles for selected failure cases; production health checks always query PostgreSQL. Auth and course integration tests skip unless `TEST_DATABASE_URL` identifies a reachable isolated PostgreSQL database whose name begins `eduflow_test_`. Provision a new test database, migrate it with Alembic, and keep credentials in an ignored environment file. Never use the development database for tests. Tests use unique records and do not reset or delete database contents.
+Media-error checks use controlled fixtures; they do not prove successful playback from an external host. Database and fixture-dependent tests require their documented private environments and may skip without them. CI runs backend migrations/tests and frontend checks/build; see [test setup and isolation](docs/development.md#backend-development-and-isolated-tests) for prerequisites.
 
-```sh
-uv run python -m pytest -m integration
-```
+## Project Status and Limitations
 
-To run the full suite using the existing Compose PostgreSQL service, create a separate test database once:
+The portfolio is deployed and the core catalog, authentication, authoring, enrollment, learning and moderation workflows are implemented. Current working-branch visual and documentation polish awaits publication; local screenshots can be newer than the live site.
 
-```sh
-# Run from the repository root; this creates a new database and never resets one.
-docker compose exec postgres sh -c 'createdb -U "$POSTGRES_USER" eduflow_test_auth'
-```
+- Sleeping backend/database services can delay initial requests. Free-tier availability depends on provider limits; no uptime guarantee is made.
+- Videos are externally hosted; delivery and continued availability depend on the source. Integrated caption tracks are not implemented, so prerecorded-media accessibility is incomplete.
+- `support@eduflow.example` is a reserved demo address, **not a working support inbox**. A real contact address can be configured separately.
+- Payments, certificates, quizzes, messaging, video hosting, user/role management and unenrollment are outside the implemented scope.
 
-In the ignored root `.env`, add `TEST_DATABASE_URL` using the same connection details as `DATABASE_URL` but with database name `eduflow_test_auth`. Do not replace the development `DATABASE_URL`. For a custom Compose project name, adjust the network name below.
+## Documentation
 
-```sh
-docker build --target test -t eduflow-lms-tests backend
-docker run --rm --network eduflow-lms_default --env-file .env eduflow-lms-tests \
-  sh -c 'export DATABASE_URL="${TEST_DATABASE_URL:?Set isolated TEST_DATABASE_URL in .env}"; exec uv run --locked python -m pytest -p no:cacheprovider'
-```
-
-The test image uses locked dependencies and includes Alembic migrations. The test fixture migrates the isolated database and creates unique records; it never drops tables, truncates data, or removes volumes. The runtime image excludes development dependencies and tests.
-
-## Structure and development
-
-- `backend/app/api/v1/`: versioned HTTP routes.
-- `backend/app/core/`: environment settings.
-- `backend/app/db/`: declarative base and synchronous per-request sessions.
-- `backend/alembic/`: schema migrations.
-- `backend/tests/`: automated backend checks.
-- `frontend/src/`: typed API/session client, shared components, role routes and product pages.
-- `frontend/src/tests/`, `frontend/e2e/`: client/component regressions and optional real-API browser checks.
-- `.github/workflows/ci.yml`: dependency installation, Ruff, tests, and PostgreSQL migration checks.
-
-`backend/app/auth/` contains auth models, schemas, security helpers, dependencies, routes, services, and persistence queries. Authentication follows Router → Service → Repository → Database without generic base repositories. Infrastructure health checks query the database directly.
-
-`backend/app/courses/` contains course models, schemas, persistence queries, and business services. Public, instructor, and admin routers reuse these services and the existing database sessions; publication and ownership rules are shared.
-
-`backend/app/learning/` contains enrollment/progress models, schemas, queries, and services. Its router reuses current-state auth dependencies and the same database sessions. Integration tests cover concurrency and learning-record preservation in the isolated test database.
-
-See [PROJECT_SPEC.md](PROJECT_SPEC.md) for scope and phases, [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) for the frontend, and [AGENTS.md](AGENTS.md) for project contribution rules. Use Git for version control; no automatic snapshots or duplicate source backups. Never commit `.env` files, push, deploy, or run destructive database commands without authorization.
+- [Development guide](docs/development.md): local accounts, API contracts, demo curriculum and isolated verification.
+- [Deployment guide](docs/deployment.md): hosting configuration, proxy/cookie behavior and approval-gated remote maintenance.
+- [Demo videos](docs/demo-videos.md): media attribution, local attachment and future production procedure.
+- [Project specification](PROJECT_SPEC.md): domain rules, delivery phases and scope.
+- [Design system](DESIGN_SYSTEM.md): themes, components, motion and accessibility conventions.
