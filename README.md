@@ -194,6 +194,29 @@ docker compose exec backend python -m app.cli create-instructor --email instruct
 
 Replace the example email and name. Verify that the configured database is local development first, and use a backend image containing the command. `create-instructor` requires `ENVIRONMENT=development` and rejects all other environments before prompting or opening a database session. Password entry and confirmation are hidden; the existing registration validation and Argon2id hashing apply. Success prints the new instructor UUID for the demo seed. Duplicate accounts are rejected without modification or promotion. There is no password argument, automatic startup provisioning, or public instructor-registration endpoint. Public registration continues to create students only.
 
+### Dedicated production instructor (approval required)
+
+The separate `app.provision_production_instructor` maintenance command creates **one new active instructor** per explicitly approved invocation. It does not promote accounts, create an admin, create sessions, import courses, or change public registration/RBAC. Keep the development instructor command development-only. Obtain approval for the dedicated email/display name and production account creation before connecting; no email or password is supplied by the repository.
+
+Verify the DIRECT endpoint in Neon belongs to project `eduflow-production`, branch `production`, and the intended database. Load the existing production settings privately into a local interactive terminal environment, without changing development `.env`, Render settings, or Vercel. Required settings include `ENVIRONMENT=production`, DIRECT `DATABASE_URL` retaining TLS parameters, a valid privately supplied `JWT_SECRET`, `REFRESH_COOKIE_SECURE=true`, and explicit HTTPS origin lists. Do not put credentials in CLI arguments or shell history. Unset libpq `PG*` routing defaults. The same strict endpoint/TLS, effective public schema, and `0004_learning` checks as the course importer apply; the confirmation label attests the operator's project/branch verification and does not independently query Neon project metadata.
+
+From `backend/`, only after approval:
+
+```sh
+.venv/bin/python -m app.provision_production_instructor \
+  --email "<APPROVED_DEDICATED_INSTRUCTOR_EMAIL>" \
+  --full-name "<APPROVED_PUBLIC_DISPLAY_NAME>" \
+  --expected-host "<NEON_DIRECT_HOST>" \
+  --expected-database "<NEON_DATABASE_NAME>" \
+  --confirm-production-provisioning eduflow-production/production
+```
+
+Enter and confirm a unique password from a password manager at the **hidden interactive prompts**. There is no password argument or password environment-variable interface. Input refuses a non-interactive or echoing prompt. Existing `RegisterRequest` normalizes email and validates the display name/password; password policy remains 12–128 characters with a letter and a non-space non-letter. Prefer a generated password of at least 20 characters meeting that policy. The existing account service applies Argon2id hashing and unique-email enforcement. A duplicate normalized email, including an existing student account, is rejected without updates or promotion; the unique index also protects concurrent creation.
+
+The service's commit is enclosed in a savepoint inside one caller-owned transaction. Schema, creation, refresh, or pre-commit failures roll back the new account; existing users, sessions, courses, enrollments and progress remain untouched. Success exposes only the instructor UUID after the outer commit. If the final commit acknowledgement is lost, the result may be uncertain: obtain a read-only account verification before retrying, never promote or overwrite an existing account, and never assume a failed response proves no account exists. No account deletion/reset is provided.
+
+Record the returned UUID privately as the approved course owner. After separately approving read-only production access, use it for the course importer dry-run below; account provisioning does not start that import. Database-free tests check validation, hashing, duplicate refusal, target checks and transaction/error orchestration; they do not establish production connectivity or prove PostgreSQL savepoint behavior. An isolated PostgreSQL rehearsal is still needed before production execution.
+
 ### Optional original demo curriculum
 
 The explicit demo seed contains 8 courses, 21 modules, and 63 short text lessons with explanations, examples, and exercises. All video URLs are null. It requires an **existing active instructor** UUID; it never creates accounts, promotes users, or runs at startup. No schema changes are needed. These are eight additional demo courses, not a limit on the catalog's total size.
@@ -214,6 +237,42 @@ The seed's focused unit tests use in-memory transaction doubles and never connec
 ```sh
 uv run --locked python -m pytest tests/test_demo_seed.py
 ```
+
+### Explicit production demo-course import (approval required)
+
+`python -m app.import_demo_courses` is a separate, production-only maintenance CLI. The development seed and instructor CLI retain their development-only guards. It imports the existing original manifest: Python Fundamentals, Modern React Development, UI/UX Design Essentials, SQL & PostgreSQL, and FastAPI Backend Development each have 3 modules/9 lessons; JavaScript Essentials, Git & GitHub Workflow, and Web Development Foundations each have 2 modules/6 lessons. Total: **8 courses, 21 modules, 63 text lessons**, all video URLs null. No accounts, credentials, sessions, enrollments, or progress are imported.
+
+Before any production connection, obtain approval and verify in Neon that the DIRECT endpoint belongs to project `eduflow-production`, branch `production`, and the intended database. The CLI cannot infer a Neon project/branch name from a PostgreSQL connection alone: its confirmation label is an operator attestation, while the expected host/database checks enforce the chosen endpoint. Use a trusted local terminal with the privately loaded production settings described above, `ENVIRONMENT=production`, a DIRECT TLS `DATABASE_URL`, and no libpq `PG*` routing overrides. Never change the development `.env`, pass the URL/password in command arguments, change Render settings, or set production to `development` to bypass safeguards. No migrations are run by the importer; revision `0004_learning` and the public schema are required.
+
+An **existing active instructor UUID** must be approved as the owner. All eight courses reference that user; the importer never creates users or changes roles. An existing dedicated content instructor can be reused. Otherwise, separately approve the dedicated production instructor procedure above. Public registration remains student-only; `create-instructor` remains development-only. Do not promote an existing student/admin, copy development accounts/password hashes, or create a placeholder account through SQL.
+
+After approving read-only production access, from `backend/`, substitute the actual instructor UUID, DIRECT hostname, and database name (not the Neon project name):
+
+```sh
+.venv/bin/python -m app.import_demo_courses \
+  --instructor-id "<ACTIVE_PRODUCTION_INSTRUCTOR_UUID>" \
+  --expected-host "<NEON_DIRECT_HOST>" \
+  --expected-database "<NEON_DATABASE_NAME>" \
+  --dry-run
+```
+
+Inspect the result before separately approving writes: a first empty demo namespace should report `would_create=8, skipped=0`. Any conflicting reserved slug/UUID, owner, curriculum, or publication status stops the operation; existing courses are never repaired or overwritten. Matching published records are skipped using the same deterministic UUIDs and full-content comparison as the development seed. Repeat runs must use the same instructor UUID and manifest.
+
+Only after approving writes, execute:
+
+```sh
+.venv/bin/python -m app.import_demo_courses \
+  --instructor-id "<ACTIVE_PRODUCTION_INSTRUCTOR_UUID>" \
+  --expected-host "<NEON_DIRECT_HOST>" \
+  --expected-database "<NEON_DATABASE_NAME>" \
+  --apply --confirm-production-import eduflow-production/production
+```
+
+Apply wraps the existing per-course publication service in **one outer database transaction**, with service commits contained in savepoints: a failure before commit rolls back the entire import, including earlier courses from this invocation. If the connection fails while acknowledging the final commit, its outcome may be uncertain; use a read-only dry-run to verify before retrying. Unique constraints prevent concurrent duplicates; after a competing import completes, rerun the dry-run rather than bypassing a conflict. Dry-run uses a read-only transaction and does not publish, commit, or change records. Course success output is emitted only after the outer commit.
+
+After a successful import, run the dry-run again: expect `would_create=0, skipped=8`. Verify the eight reserved `demo-` slugs in the public `/api/v1/courses` listing (following pagination) and each `/api/v1/courses/{slug}` detail. The existing publication service validates content, sets publication timestamps, and makes the courses visible; public responses still omit lesson bodies. Existing production users and their sessions/enrollments/progress remain untouched. No rollback-by-deletion is provided: if a successful import later needs removal, request a separate reviewed operation that respects enrollment/progress restrictions.
+
+Preparation tests use database-free doubles; they do not establish live Neon connectivity or prove PostgreSQL savepoint behavior. Run a separately approved isolated PostgreSQL rehearsal before the first production apply if this has not yet been verified.
 
 ## Course management
 
