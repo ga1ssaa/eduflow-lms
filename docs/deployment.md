@@ -1,8 +1,10 @@
 # Deployment and maintenance guide
 
-The [live portfolio](https://eduflow-lms-topaz.vercel.app) uses Vercel for the frontend, Render for the Docker API and Neon PostgreSQL. This guide describes the repository's deployment contract and explicit maintenance procedures; working-branch polish may not yet be published.
+The [live portfolio](https://eduflow-lms.tech) uses Vercel for the frontend, Render for the Docker API and Neon PostgreSQL. This guide describes the repository's deployment contract and explicit maintenance procedures; working-branch polish may not yet be published.
 
 Resource creation, Git publication, remote migrations, account provisioning and deployment require explicit approval. Existing local data is not transferred automatically. Keep credentials in approved secret stores, never in Git, command arguments, chat or logs. Never relabel production as development to bypass a guard.
+
+The primary production origin is `https://eduflow-lms.tech`; `https://eduflow-lms-topaz.vercel.app` remains the Vercel provider URL for operational reference. Documenting these origins does not change or verify DNS, TLS, redirects, Vercel domains or hosted environment settings.
 
 ## Hosting contract and limits
 
@@ -18,21 +20,23 @@ Use `/api/v1/health` for Render's liveness check so health polling does not wake
 
 Set these in Render's environment dashboard; never enter credentials in Git, URLs shared in chat, command arguments, or build logs. `sync: false` values in the Blueprint must be supplied explicitly.
 
-| Variable                                        | Production value                                                                                               |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `ENVIRONMENT`                                   | `production`                                                                                                   |
-| `DATABASE_URL`                                  | Neon **pooled** PostgreSQL URL, including its TLS parameters                                                   |
-| `JWT_SECRET`                                    | Unique random secret of at least 32 non-padding characters, stored privately and kept stable across redeploys  |
-| `AUTH_ALLOWED_ORIGINS`                          | JSON array containing only the actual stable HTTPS frontend origin, e.g. `["https://YOUR-PROJECT.vercel.app"]` |
-| `CORS_ORIGINS`                                  | Same explicit HTTPS origin array; never wildcard or an origin with a trailing slash                            |
-| `REFRESH_COOKIE_SECURE`                         | `true`                                                                                                         |
-| `REFRESH_COOKIE_SAMESITE`                       | `lax` (same-origin proxy)                                                                                      |
-| `REFRESH_COOKIE_NAME`                           | `eduflow_refresh`                                                                                              |
-| `JWT_ISSUER`                                    | `eduflow`                                                                                                      |
-| `ACCESS_TOKEN_MINUTES` / `REFRESH_TOKEN_DAYS`   | `15` / `7`                                                                                                     |
-| `DATABASE_CONNECT_TIMEOUT`                      | `15` seconds, to allow a sleeping Neon compute to wake                                                         |
-| `WEB_CONCURRENCY` / `UVICORN_LIMIT_CONCURRENCY` | `1` / `4`, as above                                                                                            |
-| `PORT`                                          | Supplied by Render; do not replace with localhost or hardcode a different port                                 |
+| Variable                                        | Production value                                                                                              |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `ENVIRONMENT`                                   | `production`                                                                                                  |
+| `DATABASE_URL`                                  | Neon **pooled** PostgreSQL URL, including its TLS parameters                                                  |
+| `JWT_SECRET`                                    | Unique random secret of at least 32 non-padding characters, stored privately and kept stable across redeploys |
+| `AUTH_ALLOWED_ORIGINS`                          | JSON array of explicitly trusted HTTPS frontend origins, starting with `["https://eduflow-lms.tech"]`         |
+| `CORS_ORIGINS`                                  | Same explicit HTTPS origin array; never wildcard or an origin with a trailing slash                           |
+| `REFRESH_COOKIE_SECURE`                         | `true`                                                                                                        |
+| `REFRESH_COOKIE_SAMESITE`                       | `lax` (same-origin proxy)                                                                                     |
+| `REFRESH_COOKIE_NAME`                           | `eduflow_refresh`                                                                                             |
+| `JWT_ISSUER`                                    | `eduflow`                                                                                                     |
+| `ACCESS_TOKEN_MINUTES` / `REFRESH_TOKEN_DAYS`   | `15` / `7`                                                                                                    |
+| `DATABASE_CONNECT_TIMEOUT`                      | `15` seconds, to allow a sleeping Neon compute to wake                                                        |
+| `WEB_CONCURRENCY` / `UVICORN_LIMIT_CONCURRENCY` | `1` / `4`, as above                                                                                           |
+| `PORT`                                          | Supplied by Render; do not replace with localhost or hardcode a different port                                |
+
+For the primary domain, explicitly include `https://eduflow-lms.tech` in both `AUTH_ALLOWED_ORIGINS` and `CORS_ORIGINS`. If authentication is intentionally supported on the provider URL too, include `https://eduflow-lms-topaz.vercel.app` as a separate exact entry in both arrays. A custom domain, provider hostname, `www` alias and preview deployment are distinct origins; none is trusted implicitly. Review hosted settings separately before any approved change.
 
 Vercel: Root Directory `frontend`, Node.js **24.x**, framework Vite, build `npm run build`, output `dist`, and public `VITE_API_BASE_URL=/api/v1`. No backend secrets belong in Vercel or `VITE_*`. `EDUFLOW_API_PROXY_TARGET` configures local Vite only and does not configure Vercel.
 
@@ -59,7 +63,7 @@ These are remote database operations requiring explicit approval, not local docu
 For an existing deployment, verify and reuse its approved services, database and stable origin. The creation steps below apply only to a separately approved new environment; do not provision duplicates for an ordinary release.
 
 1. Review and approve the configuration, then separately approve the desired Git publication. No commit or push is performed by preparation. Keep all local data intact.
-2. Select Vercel Hobby and the intended stable `vercel.app` origin without enabling paid add-ons. Do not route visitors or run authentication until the backend proxy and allowlist are ready. Preview deployment origins are not automatically trusted; do not give arbitrary previews production database access.
+2. Select Vercel Hobby and the intended stable HTTPS frontend origin without enabling paid add-ons. For the existing portfolio, use `https://eduflow-lms.tech` as the primary origin and retain the provider URL for operational reference. Do not route visitors or run authentication until the backend proxy and allowlist are ready. Preview deployment origins are not automatically trusted; do not give arbitrary previews production database access.
 3. Create the empty Neon Free project/database, save both TLS URLs in a private secret store, and verify its identity before executing the explicit direct-URL migration commands above. Monitor Free storage, compute, and transfer usage.
 4. Create the Render Free Docker service using `render.yaml` from the approved branch, supply the required environment values, and review the Free plan before confirming creation. Blueprint import starts the initial deployment even with automatic redeploys off. Do not configure a pre-deploy command, disk, paid instance, or Render database. Confirm both health endpoints after startup and note the actual assigned HTTPS `onrender.com` hostname.
 5. Review the existing [`frontend/vercel.json`](../frontend/vercel.json), which points to the deployed backend. For a separately approved new environment, start from [`frontend/vercel.json.example`](../frontend/vercel.json.example) and replace **only** `replace-with-render-host.invalid` with that environment's actual Render hostname. Do not blindly overwrite the current configuration. The template intentionally uses a non-routable placeholder; Vercel does not automatically consume `.example` files or interpolate environment variables in this JSON. Review the resulting file before the separately approved frontend deployment. API rewrites precede the SPA fallback, which excludes `/api` so API failures do not become HTML page responses. Static assets remain served normally.
@@ -130,4 +134,4 @@ Preparation tests use database-free doubles; they do not establish live Neon con
 
 ## Optional videos
 
-The three reviewed video attachments are confirmed only in local development. The original course importer uses the base text manifest with null video URLs. Production attachment requires its own target verification, dry-run and explicit write approval: follow [Demo videos](demo-videos.md). Never infer production attachment from local screenshots, and never rerun the original importer to overwrite attached content.
+The three reviewed CC BY 3.0 videos are confirmed attached in production to **Names and Values**, **Focused Commits** and **Semantic HTML**, with plaintext attribution. The original course importer still uses the base text manifest with null video URLs. Any subsequent production inspection or write requires its own target verification and appropriate approval: follow [Demo videos](demo-videos.md). Attachment status does not establish current external playback availability. Never rerun the original importer to overwrite attached content.

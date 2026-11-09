@@ -2,6 +2,8 @@
 
 The reviewed sidecar attaches three supplementary English videos to existing original demo lessons. The base `backend/app/demo_courses.json` remains unchanged: 8 courses, 21 modules, 63 text lessons, null video URLs and stable UUIDs. No accounts, courses, lessons, enrollments or progress are created, and nothing runs at startup.
 
+Production attachment is confirmed for **Names and Values**, **Focused Commits** and **Semantic HTML**, with the plaintext attribution described below. This records the confirmed attachment status; current external playback availability requires separate verification.
+
 | Target lesson                                                   | Video / author                                                                | Source                                                                                      | License                                                   |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
 | Python Fundamentals → module 1, lesson 1: Names and Values      | Lecture 1.3 Python as a Language / Charles Severance (University of Michigan) | [Commons record](https://commons.wikimedia.org/wiki/File:Pythonlectureseverance1.3.webm)    | [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/) |
@@ -41,9 +43,9 @@ Apply locks affected courses in stable order. All lesson changes share one outer
 
 **After attachment, the original seed/importer intentionally reports a fingerprint conflict**, because selected lessons now have video URLs and attribution. Verify/repeat using the attachment CLI. Do not bypass importer checks, change its fingerprint or overwrite attached content. Removal requires a separately reviewed operation; no reset/delete command is provided.
 
-## Future production procedure: approval required
+## Production maintenance procedure: approval required
 
-Adding this preparation does not authorize production access. Separately verify in Neon that the DIRECT endpoint belongs to project `eduflow-production`, branch `production`, and the intended database. Obtain read-only access approval and load credentials privately without changing development `.env` or hosted settings. Use `ENVIRONMENT=production`, existing production security settings, and TLS `sslmode=require&channel_binding=require` or `sslmode=verify-full`. Unset libpq routing defaults.
+The confirmed attachments do not authorize further production access. Separately verify in Neon that the DIRECT endpoint belongs to project `eduflow-production`, branch `production`, and the intended database. Obtain read-only access approval and load credentials privately without changing development `.env` or hosted settings. Use `ENVIRONMENT=production`, existing production security settings, and TLS `sslmode=require&channel_binding=require` or `sslmode=verify-full`. Unset libpq routing defaults.
 
 After approval, inspect with the same command using the approved production instructor UUID, DIRECT host and database, plus `--dry-run`. Production reuses the importer's strict target/TLS guard, expected database/public-schema verification and `0004_learning` check. SQL/hostname checks cannot establish the Neon project/branch.
 
